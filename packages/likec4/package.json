@@ -212,7 +212,7 @@
     "esm-env": "catalog:utils",
     "fast-equals": "catalog:utils",
     "get-port": "^7.1.0",
-    "html-to-image": "1.11.11",
+    "html-to-image": "1.11.13",
     "is-inside-container": "^1.0.0",
     "json5": "catalog:utils",
     "ky": "^1.14.3",

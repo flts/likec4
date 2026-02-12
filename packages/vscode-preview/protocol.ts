@@ -52,6 +52,26 @@ export const FetchProjectsOverview: RequestType<never, { projectsView: LayoutedP
   method: 'fetch-projects-overview',
 }
 
+export const ExportPng: RequestType<{
+  projectId: ProjectId
+  viewId: ViewId
+}, {
+  base64Png: string | null
+  error: string | null
+}> = {
+  method: 'export-png',
+}
+
+export const ExportSvg: RequestType<{
+  projectId: ProjectId
+  viewId: ViewId
+}, {
+  svg: string | null
+  error: string | null
+}> = {
+  method: 'export-svg',
+}
+
 export type OpenViewPayload = {
   screen: 'view'
   viewId: ViewId
@@ -63,6 +83,10 @@ export type OpenViewPayload = {
 }
 export const OnOpenView: NotificationType<OpenViewPayload> = {
   method: 'on-open-view',
+}
+
+export const WebviewReady: NotificationType<OpenViewPayload> = {
+  method: 'webview-ready',
 }
 
 export type GetLastClickedNodeResult = {

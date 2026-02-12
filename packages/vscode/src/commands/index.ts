@@ -2,6 +2,10 @@ import useTelemetry from '#useTelemetry'
 import { useDiagramPanel } from '../panel'
 import { useLanguageClient } from '../useLanguageClient'
 import { useRpc } from '../useRpc'
+import { registerExportDotOfCurrentViewCommand } from './exportDotOfCurrentView'
+import { registerExportPngOfCurrentViewCommand } from './exportPngOfCurrentView'
+import { registerExportSvgOfCurrentViewCommand } from './exportSvgOfCurrentView'
+import { registerExportViewSourceCommands } from './exportViewSource'
 import { registerLocateCommand } from './locate'
 import { registerOpenPreviewCommand } from './openPreview'
 import { registerOpenProjectsOverviewCommand } from './openProjectsOverview'
@@ -35,6 +39,10 @@ export function registerCommands() {
   registerLocateCommand(deps)
   registerPreviewContextOpenSourceCommand(deps)
   registerPrintDotOfCurrentViewCommand(deps)
+  registerExportDotOfCurrentViewCommand(deps)
+  registerExportViewSourceCommands(deps)
+  registerExportPngOfCurrentViewCommand(deps)
+  registerExportSvgOfCurrentViewCommand(deps)
   registerValidateLayoutCommand(deps)
   registerReloadProjectsCommand(deps)
 }

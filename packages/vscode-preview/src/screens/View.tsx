@@ -68,7 +68,10 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
 
   return (
     <>
-      <div className={likec4Container} data-vscode-context='{"preventDefaultContextMenuItems": true}'>
+      <div
+        className={likec4Container}
+        data-likec4-diagram
+        data-vscode-context='{"preventDefaultContextMenuItems": true}'>
         <LikeC4Diagram
           view={view}
           fitViewPadding={{
@@ -133,9 +136,15 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
             })
           }}
           onInitialized={() => {
+            console.log('[likec4-preview] view initialized', view.id, projectId)
             extensionApi.locate({
               projectId,
               view: view.id,
+            })
+            extensionApi.notifyReady({
+              screen: 'view',
+              viewId: view.id,
+              projectId,
             })
           }}
           onLogoClick={openProjectsScreen}

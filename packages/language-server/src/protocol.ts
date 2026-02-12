@@ -131,6 +131,86 @@ export namespace LayoutView {
 }
 
 /**
+ * Request to export a view as D2 source
+ * If LSP has multiple projects, the projectId is required.
+ */
+export namespace ExportD2View {
+  export type Params = {
+    viewId: ViewId
+    projectId?: string | undefined
+  }
+  export type Res = {
+    source: string | null
+  }
+  export const req = new RequestType<Params, Res, void>('likec4/export-d2-view')
+  export type Req = typeof req
+}
+
+/**
+ * Request to export a view as Mermaid source
+ * If LSP has multiple projects, the projectId is required.
+ */
+export namespace ExportMmdView {
+  export type Params = {
+    viewId: ViewId
+    projectId?: string | undefined
+  }
+  export type Res = {
+    source: string | null
+  }
+  export const req = new RequestType<Params, Res, void>('likec4/export-mmd-view')
+  export type Req = typeof req
+}
+
+/**
+ * Request to export a view as PlantUML source
+ * If LSP has multiple projects, the projectId is required.
+ */
+export namespace ExportPumlView {
+  export type Params = {
+    viewId: ViewId
+    projectId?: string | undefined
+  }
+  export type Res = {
+    source: string | null
+  }
+  export const req = new RequestType<Params, Res, void>('likec4/export-puml-view')
+  export type Req = typeof req
+}
+
+/**
+ * Request to export a view as PNG
+ * If LSP has multiple projects, the projectId is required.
+ */
+export namespace ExportPngView {
+  export type Params = {
+    viewId: ViewId
+    projectId?: string | undefined
+  }
+  export type Res = {
+    base64Png: string | null
+  }
+  export const req = new RequestType<Params, Res, void>('likec4/export-png-view')
+  export type Req = typeof req
+}
+
+/**
+ * Request to export a view as SVG with Graphviz layout (ignoring manual layout)
+ * If LSP has multiple projects, the projectId is required.
+ */
+export namespace ExportSvgGraphvizView {
+  export type Params = {
+    viewId: ViewId
+    projectId?: string | undefined
+  }
+  export type Res = {
+    svg: string | null
+  }
+  export const req = new RequestType<Params, Res, void>('likec4/export-svg-graphviz-view')
+  export type Req = typeof req
+}
+
+/**
  * Request to validate all views
  * If projects ID is provided, it will validate only the views of that project.
  */

@@ -1403,6 +1403,9 @@ importers:
       '@likec4/core':
         specifier: workspace:*
         version: link:../core
+      '@likec4/generators':
+        specifier: workspace:*
+        version: link:../generators
       '@likec4/layouts':
         specifier: workspace:*
         version: link:../layouts
@@ -2640,6 +2643,9 @@ importers:
       fast-equals:
         specifier: catalog:utils
         version: 6.0.0
+      html-to-image:
+        specifier: 1.11.11
+        version: 1.11.11
       nanostores:
         specifier: catalog:react
         version: 1.2.0

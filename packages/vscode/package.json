@@ -210,6 +210,38 @@
           "when": "likec4.activated"
         },
         {
+          "command": "likec4.print-dot-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-dot-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-d2-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-mmd-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-png-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-puml-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-svg-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-svg-graphviz-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
           "command": "likec4.reload-projects",
           "when": "likec4.activated"
         },
@@ -252,6 +284,41 @@
       {
         "command": "likec4.print-dot-of-currentview",
         "title": "%ext.cmd.print-dot-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-dot-of-currentview",
+        "title": "%ext.cmd.export-dot-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-d2-of-currentview",
+        "title": "%ext.cmd.export-d2-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-mmd-of-currentview",
+        "title": "%ext.cmd.export-mmd-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-puml-of-currentview",
+        "title": "%ext.cmd.export-puml-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-png-of-currentview",
+        "title": "%ext.cmd.export-png-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-svg-of-currentview",
+        "title": "%ext.cmd.export-svg-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-svg-graphviz-of-currentview",
+        "title": "%ext.cmd.export-svg-graphviz-of-currentview%",
         "category": "%ext.title%"
       },
       {

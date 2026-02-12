@@ -10,6 +10,7 @@ import {
   nonexhaustive,
 } from '@likec4/core'
 import { LikeC4Model } from '@likec4/core/model'
+import { generateD2, generateMermaid, generatePuml } from '@likec4/generators'
 import { Disposable, interruptAndCheck, URI, UriUtils } from 'langium'
 import { DiagnosticSeverity } from 'vscode-languageserver-protocol'
 import {
@@ -19,6 +20,10 @@ import {
   DidChangeProjectsNotification,
   DidChangeSnapshotNotification,
   DidRequestOpenViewNotification,
+  ExportD2View,
+  ExportMmdView,
+  ExportPumlView,
+  ExportSvgGraphvizView,
   FetchComputedModel,
   FetchLayoutedModel,
   FetchProjects,
@@ -173,6 +178,54 @@ export class Rpc extends ADisposable {
           cancelToken,
         })
         return { result }
+      }),
+      // ----------
+      connection.onRequest(ExportD2View.req, async ({ viewId, projectId }, cancelToken) => {
+        logger.debug`received request ${'export-d2-view'} for ${viewId} from project ${projectId}`
+        const model = await likec4Services.ModelBuilder.computeModel(projectId as ProjectId, cancelToken)
+        const viewModel = model.findView(viewId)
+        if (!viewModel) {
+          logger.warn`export-d2-view: view ${viewId} not found`
+          return { source: null }
+        }
+        return { source: generateD2(viewModel) }
+      }),
+      // ----------
+      connection.onRequest(ExportMmdView.req, async ({ viewId, projectId }, cancelToken) => {
+        logger.debug`received request ${'export-mmd-view'} for ${viewId} from project ${projectId}`
+        const model = await likec4Services.ModelBuilder.computeModel(projectId as ProjectId, cancelToken)
+        const viewModel = model.findView(viewId)
+        if (!viewModel) {
+          logger.warn`export-mmd-view: view ${viewId} not found`
+          return { source: null }
+        }
+        return { source: generateMermaid(viewModel) }
+      }),
+      // ----------
+      connection.onRequest(ExportPumlView.req, async ({ viewId, projectId }, cancelToken) => {
+        logger.debug`received request ${'export-puml-view'} for ${viewId} from project ${projectId}`
+        const model = await likec4Services.ModelBuilder.computeModel(projectId as ProjectId, cancelToken)
+        const viewModel = model.findView(viewId)
+        if (!viewModel) {
+          logger.warn`export-puml-view: view ${viewId} not found`
+          return { source: null }
+        }
+        return { source: generatePuml(viewModel) }
+      }),
+      // ----------
+      connection.onRequest(ExportSvgGraphvizView.req, async ({ viewId, projectId }, cancelToken) => {
+        logger.debug`received request ${'export-svg-graphviz-view'} for ${viewId} from project ${projectId}`
+        const model = await likec4Services.ModelBuilder.computeModel(projectId as ProjectId, cancelToken)
+        const viewModel = model.findView(viewId)
+        if (!viewModel) {
+          logger.warn`export-svg-graphviz-view: view ${viewId} not found`
+          return { svg: null }
+        }
+        const result = await likec4Services.Views.layouter.svg({
+          view: viewModel.$view,
+          styles: model.$styles,
+        })
+        return { svg: result.svg }
       }),
       // ----------
       connection.onRequest(ValidateLayout.req, async ({ projectId }, cancelToken) => {

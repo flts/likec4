@@ -5,6 +5,10 @@ import {
   DidChangeProjectsNotification,
   DidChangeSnapshotNotification,
   DidRequestOpenViewNotification,
+  ExportD2View,
+  ExportMmdView,
+  ExportPumlView,
+  ExportSvgGraphvizView,
   FetchComputedModel,
   FetchProjects,
   FetchProjectsOverview,
@@ -70,6 +74,26 @@ export const useRpc = createSingletonComposable(() => {
     async layoutView(params: LayoutView.Params) {
       const { result } = await queue(() => client.sendRequest(LayoutView.req, params))
       return result
+    },
+
+    async exportD2View(params: ExportD2View.Params) {
+      const { source } = await queue(() => client.sendRequest(ExportD2View.req, params))
+      return source
+    },
+
+    async exportMmdView(params: ExportMmdView.Params) {
+      const { source } = await queue(() => client.sendRequest(ExportMmdView.req, params))
+      return source
+    },
+
+    async exportPumlView(params: ExportPumlView.Params) {
+      const { source } = await queue(() => client.sendRequest(ExportPumlView.req, params))
+      return source
+    },
+
+    async exportSvgGraphvizView(params: ExportSvgGraphvizView.Params) {
+      const { svg } = await queue(() => client.sendRequest(ExportSvgGraphvizView.req, params))
+      return svg
     },
 
     async validateLayout() {

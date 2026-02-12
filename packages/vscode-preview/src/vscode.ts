@@ -7,6 +7,7 @@ import type {
   ViewChange,
   ViewId,
 } from '@likec4/core/types'
+import { toBlob, toPng, toSvg } from 'html-to-image'
 import { CancellationTokenImpl, HOST_EXTENSION } from 'vscode-messenger-common'
 import { Messenger } from 'vscode-messenger-webview'
 import {
@@ -15,6 +16,8 @@ import {
   type WebviewLocateReq,
   BroadcastModelUpdate,
   BroadcastProjectsUpdate,
+  ExportPng,
+  ExportSvg,
   FetchComputedModel,
   FetchLayoutedView,
   FetchProjectsOverview,
@@ -23,6 +26,7 @@ import {
   ReadLocalIcon,
   ViewChangeReq,
   WebviewMsgs,
+  WebviewReady,
 } from '../protocol'
 
 export type VscodeState = {
@@ -59,6 +63,9 @@ export const ExtensionApi = {
   },
   updateTitle: (title: string) => {
     messenger.sendNotification(WebviewMsgs.UpdateMyTitle, HOST_EXTENSION, { title })
+  },
+  notifyReady: (payload: { screen: 'view'; viewId: ViewId; projectId: ProjectId }) => {
+    messenger.sendNotification(WebviewReady, HOST_EXTENSION, payload)
   },
 
   change: async (params: {
@@ -127,6 +134,14 @@ export const ExtensionApi = {
     messenger.onRequest(GetLastClickedNode, handler)
   },
 
+  onExportPngRequest: (handler: Handler<typeof ExportPng>) => {
+    messenger.onRequest(ExportPng, handler)
+  },
+
+  onExportSvgRequest: (handler: Handler<typeof ExportSvg>) => {
+    messenger.onRequest(ExportSvg, handler)
+  },
+
   onModelUpdateNotification: (handler: () => void) => {
     messenger.onNotification(BroadcastModelUpdate, handler)
   },
@@ -135,6 +150,179 @@ export const ExtensionApi = {
     messenger.onNotification(BroadcastProjectsUpdate, handler)
   },
 }
+
+const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
+
+function base64FromArrayBuffer(buffer: ArrayBuffer) {
+  let binary = ''
+  const bytes = new Uint8Array(buffer)
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]!)
+  }
+  return btoa(binary)
+}
+
+ExtensionApi.onExportPngRequest(async () => {
+  console.log('[likec4-preview] export-png request')
+  const root = document.querySelector<HTMLElement>('[data-likec4-diagram]')
+  if (!root) {
+    console.warn('[likec4-preview] export-png: diagram not found')
+    return {
+      base64Png: null,
+      error: 'Diagram not found',
+    }
+  }
+  const diagramViewport = root.querySelector<HTMLElement>('.react-flow')
+  if (!diagramViewport) {
+    console.warn('[likec4-preview] export-png: react-flow viewport not found')
+    return {
+      base64Png: null,
+      error: 'Diagram viewport not found',
+    }
+  }
+  const rect = diagramViewport.getBoundingClientRect()
+  if (rect.width <= 0 || rect.height <= 0) {
+    console.warn('[likec4-preview] export-png: diagram has zero size', rect)
+    return {
+      base64Png: null,
+      error: 'Diagram is not ready to export',
+    }
+  }
+  try {
+    await new Promise(requestAnimationFrame)
+    const options = {
+      backgroundColor: 'transparent',
+      cacheBust: true,
+      imagePlaceholder: emptyGif,
+      width: Math.ceil(rect.width),
+      height: Math.ceil(rect.height),
+      pixelRatio: 3,
+      filter: (node: HTMLElement) => {
+        const classList = node.classList
+        if (!classList) {
+          return true
+        }
+        if (
+          classList.contains('react-flow__panel') ||
+          classList.contains('react-flow__controls') ||
+          classList.contains('react-flow__background') ||
+          classList.contains('likec4-navigation-panel')
+        ) {
+          return false
+        }
+        return true
+      },
+    }
+    console.time('toPng')
+    const dataUrl = await toPng(diagramViewport, options)
+    console.timeEnd('toPng')
+    if (dataUrl && dataUrl.startsWith('data:image/png')) {
+      const base64Png = dataUrl.split(',')[1]!
+      return {
+        base64Png,
+        error: null,
+      }
+    }
+
+    // fallback to toBlob if toPng fails
+    console.time('toBlob')
+    const blob = await toBlob(diagramViewport, options)
+    console.timeEnd('toBlob')
+    if (!blob || blob.size === 0) {
+      return {
+        base64Png: null,
+        error: 'Failed to export PNG',
+      }
+    }
+
+    const base64Png = base64FromArrayBuffer(await blob.arrayBuffer())
+    return {
+      base64Png,
+      error: null,
+    }
+  } catch (err) {
+    console.error(err)
+    return {
+      base64Png: null,
+      error: 'Failed to export PNG',
+    }
+  }
+})
+
+ExtensionApi.onExportSvgRequest(async () => {
+  console.log('[likec4-preview] export-svg request')
+  const root = document.querySelector<HTMLElement>('[data-likec4-diagram]')
+  if (!root) {
+    console.warn('[likec4-preview] export-svg: diagram not found')
+    return {
+      svg: null,
+      error: 'Diagram not found',
+    }
+  }
+  const diagramViewport = root.querySelector<HTMLElement>('.react-flow__viewport')
+  if (!diagramViewport) {
+    console.warn('[likec4-preview] export-svg: react-flow viewport not found')
+    return {
+      svg: null,
+      error: 'Diagram viewport not found',
+    }
+  }
+  const rect = diagramViewport.getBoundingClientRect()
+  if (rect.width <= 0 || rect.height <= 0) {
+    console.warn('[likec4-preview] export-svg: diagram has zero size', rect)
+    return {
+      svg: null,
+      error: 'Diagram is not ready to export',
+    }
+  }
+  try {
+    await new Promise(requestAnimationFrame)
+    const options = {
+      backgroundColor: 'transparent',
+      cacheBust: false,
+      imagePlaceholder: emptyGif,
+      width: Math.ceil(rect.width),
+      height: Math.ceil(rect.height),
+      pixelRatio: 1,
+      filter: (node: HTMLElement) => {
+        const classList = node.classList
+        if (!classList) {
+          return true
+        }
+        if (
+          classList.contains('react-flow__panel') ||
+          classList.contains('react-flow__controls') ||
+          classList.contains('react-flow__background') ||
+          classList.contains('likec4-navigation-panel')
+        ) {
+          return false
+        }
+        return true
+      },
+    }
+    console.time('toSvg')
+    const dataUrl = await toSvg(diagramViewport, options)
+    console.timeEnd('toSvg')
+    if (!dataUrl || !dataUrl.startsWith('data:image/svg+xml')) {
+      return {
+        svg: null,
+        error: 'Failed to export SVG',
+      }
+    }
+    const encoded = dataUrl.split(',')[1] ?? ''
+    const svg = decodeURIComponent(encoded)
+    return {
+      svg,
+      error: null,
+    }
+  } catch (err) {
+    console.error(err)
+    return {
+      svg: null,
+      error: 'Failed to export SVG',
+    }
+  }
+})
 
 export function getVscodeState(): VscodeState {
   const state = vscode.getState()

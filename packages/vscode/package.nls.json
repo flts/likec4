@@ -6,6 +6,14 @@
   "ext.cmd.locate": "Locate element",
   "ext.cmd.preview-context-open-source": "Open source",
   "ext.cmd.print-dot-of-currentview": "Print DOT of current view to output",
+  "ext.cmd.export-dot-of-currentview": "Export DOT of current view",
+  "ext.cmd.export-d2-of-currentview": "Export D2 of current view",
+  "ext.cmd.export-mmd-of-currentview": "Export Mermaid of current view",
+  "ext.cmd.export-puml-of-currentview": "Export PlantUML of current view",
+  "ext.cmd.export-png-of-currentview": "Export PNG of current view",
+  "ext.cmd.export-svg-of-currentview": "Export SVG of current view",
+  "ext.cmd.export-svg-graphviz-of-currentview": "Export SVG of current view (graphviz)",
+  "ext.cmd.migrate-manual-layouts": "Migrate manual layouts",
   "ext.cmd.validate-layout": "Validate layout",
   "ext.cmd.open-projects-overview": "Open Projects Overview"
 }
