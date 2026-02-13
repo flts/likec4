@@ -1,8 +1,8 @@
 import type { ProjectId, scalar } from '@likec4/core'
 import { LikeC4Model } from '@likec4/core/model'
-import { LikeC4Diagram, LikeC4EditorProvider, LikeC4ModelProvider } from '@likec4/diagram'
+import { LikeC4Diagram, LikeC4EditorProvider, LikeC4ModelProvider, pickViewBounds } from '@likec4/diagram'
 import { Button, Overlay } from '@mantine/core'
-import { memo, useMemo } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { only } from 'remeda'
 import { likec4Container, likec4ParsingScreen } from '../App.css'
 import { ErrorMessage } from '../QueryErrorBoundary'
@@ -16,10 +16,36 @@ import {
 } from '../state'
 import { ExtensionApi as extensionApi } from '../vscode'
 
+const exportBaseStyle = {
+  position: 'fixed',
+  left: '-20000px',
+  top: 0,
+  padding: '0',
+  margin: '0',
+  marginRight: 'auto',
+  marginBottom: 'auto',
+  opacity: 0,
+  pointerEvents: 'none',
+  overflow: 'hidden',
+  background: 'transparent',
+  zIndex: 2,
+} as const
+
+const EXPORT_PADDING = 20
+const EXPORT_EXTRA_PADDING = 16
+const DYNAMIC_VIEW_VARIANT = 'sequence' as const
+const MAIN_FIT_VIEW_PADDING = {
+  top: '70px',
+  bottom: '30px',
+  left: '60px',
+  right: '30px',
+} as const
+
 export function ViewScreen() {
   const { error, model } = useComputedModelData()
   const editor = useLikeC4EditorPort()
   const likec4Model = useMemo(() => model ? LikeC4Model.create(model) : null, [model])
+
   if (!likec4Model) {
     return (
       <>
@@ -45,10 +71,84 @@ export function ViewScreen() {
   )
 }
 const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
-  let {
+  const {
     view,
     error,
   } = useDiagramView(projectId)
+
+  const exportViewportRef = useRef<HTMLDivElement>(null)
+  const exportResolverRef = useRef<((el: HTMLElement | null) => void) | null>(null)
+  const [renderExportViewport, setRenderExportViewport] = useState(false)
+
+  // idempotent export-viewport state toggling to avoid redundant rerenders
+  const setRenderExportViewportState = useCallback((value: boolean) => {
+    setRenderExportViewport(prev => (prev === value ? prev : value))
+  }, [])
+
+  const bounds = useMemo(() => pickViewBounds(view!, DYNAMIC_VIEW_VARIANT), [view])
+  const exportWidth = Math.max(1, Math.ceil(bounds.width + EXPORT_PADDING * 2 + EXPORT_EXTRA_PADDING))
+  const exportHeight = Math.max(1, Math.ceil(bounds.height + EXPORT_PADDING * 2 + EXPORT_EXTRA_PADDING))
+
+  const exportSurfaceStyle = useMemo(
+    () => ({
+      ...exportBaseStyle,
+      width: `${exportWidth}px`,
+      minWidth: `${exportWidth}px`,
+      height: `${exportHeight}px`,
+      minHeight: `${exportHeight}px`,
+    }),
+    [exportWidth, exportHeight],
+  )
+
+  const resolveExportViewport = useCallback((el: HTMLElement | null) => {
+    const resolve = exportResolverRef.current
+    exportResolverRef.current = null
+    resolve?.(el)
+  }, [])
+
+  useEffect(() => {
+    return extensionApi.registerExportViewportProvider(async () => {
+      return await new Promise<HTMLElement | null>(resolve => {
+        const timeout = window.setTimeout(() => {
+          if (exportResolverRef.current) {
+            resolveExportViewport(null)
+            setRenderExportViewportState(false)
+          }
+        }, 5000)
+
+        exportResolverRef.current = (el: HTMLElement | null) => {
+          window.clearTimeout(timeout)
+          resolve(el)
+        }
+
+        setRenderExportViewportState(true)
+      })
+    }, () => {
+      setRenderExportViewportState(false)
+      resolveExportViewport(null)
+    })
+  }, [resolveExportViewport, setRenderExportViewportState])
+
+  const onExportDiagramReady = useCallback(() => {
+    const root = exportViewportRef.current
+    if (!root || !bounds) {
+      console.error('exportViewportRef.current is null')
+      resolveExportViewport(null)
+      return
+    }
+    console.log('[likec4-preview] export view ready', view.id, projectId)
+
+    const x = Math.round(-bounds.x + EXPORT_PADDING)
+    const y = Math.round(-bounds.y + EXPORT_PADDING)
+
+    const viewport = root.querySelector<HTMLElement>('.react-flow__viewport')
+    if (viewport) {
+      viewport.style.transform = `translate(${x}px, ${y}px)`
+    }
+
+    const el = root.querySelector<HTMLElement>('.react-flow') ?? null
+    resolveExportViewport(el)
+  }, [bounds, resolveExportViewport])
 
   if (!view) {
     return (
@@ -74,12 +174,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
         data-vscode-context='{"preventDefaultContextMenuItems": true}'>
         <LikeC4Diagram
           view={view}
-          fitViewPadding={{
-            top: '70px',
-            bottom: '30px',
-            left: '60px',
-            right: '30px',
-          }}
+          fitViewPadding={MAIN_FIT_VIEW_PADDING}
           controls
           enableFocusMode
           enableDynamicViewWalkthrough
@@ -123,7 +218,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
               })
             }
           }}
-          onEdgeContextMenu={(edge, event) => {
+          onEdgeContextMenu={(_edge, event) => {
             setLastClickedNode()
             event.stopPropagation()
             event.preventDefault()
@@ -157,6 +252,34 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
           </>
         )}
       </div>
+
+      {renderExportViewport && (
+        <div ref={exportViewportRef} style={exportSurfaceStyle}>
+          <LikeC4Diagram
+            view={view}
+            fitView={false}
+            fitViewPadding={0}
+            background="transparent"
+            reduceGraphics={false}
+            dynamicViewVariant={DYNAMIC_VIEW_VARIANT}
+            pannable={false}
+            zoomable={false}
+            controls={false}
+            showNavigationButtons={false}
+            enableElementDetails={false}
+            enableRelationshipBrowser={false}
+            enableElementTags={false}
+            enableSearch={false}
+            enableRelationshipDetails={false}
+            enableCompareWithLatest={false}
+            enableNotations={false}
+            enableFocusMode={false}
+            enableDynamicViewWalkthrough={false}
+            nodesSelectable={false}
+            onInitialized={onExportDiagramReady}
+          />
+        </div>
+      )}
     </>
   )
 })

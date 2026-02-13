@@ -149,9 +149,27 @@ export const ExtensionApi = {
   onProjectsUpdateNotification: (handler: () => void) => {
     messenger.onNotification(BroadcastProjectsUpdate, handler)
   },
+
+  registerExportViewportProvider: (
+    provider: () => Promise<HTMLElement | null>,
+    onClear?: (() => void) | undefined,
+  ) => {
+    exportViewportProvider = provider
+    clearExportViewport = onClear ?? null
+    return () => {
+      if (exportViewportProvider === provider) {
+        exportViewportProvider = null
+      }
+      if (clearExportViewport === onClear) {
+        clearExportViewport = null
+      }
+    }
+  },
 }
 
 const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
+let exportViewportProvider: null | (() => Promise<HTMLElement | null>) = null
+let clearExportViewport: null | (() => void) = null
 
 function base64FromArrayBuffer(buffer: ArrayBuffer) {
   let binary = ''
@@ -164,17 +182,12 @@ function base64FromArrayBuffer(buffer: ArrayBuffer) {
 
 ExtensionApi.onExportPngRequest(async () => {
   console.log('[likec4-preview] export-png request')
-  const root = document.querySelector<HTMLElement>('[data-likec4-diagram]')
-  if (!root) {
-    console.warn('[likec4-preview] export-png: diagram not found')
-    return {
-      base64Png: null,
-      error: 'Diagram not found',
-    }
-  }
-  const diagramViewport = root.querySelector<HTMLElement>('.react-flow')
+  const diagramViewport = exportViewportProvider
+    ? await exportViewportProvider()
+    : null
   if (!diagramViewport) {
     console.warn('[likec4-preview] export-png: react-flow viewport not found')
+    clearExportViewport?.()
     return {
       base64Png: null,
       error: 'Diagram viewport not found',
@@ -183,6 +196,7 @@ ExtensionApi.onExportPngRequest(async () => {
   const rect = diagramViewport.getBoundingClientRect()
   if (rect.width <= 0 || rect.height <= 0) {
     console.warn('[likec4-preview] export-png: diagram has zero size', rect)
+    clearExportViewport?.()
     return {
       base64Png: null,
       error: 'Diagram is not ready to export',
@@ -197,27 +211,13 @@ ExtensionApi.onExportPngRequest(async () => {
       width: Math.ceil(rect.width),
       height: Math.ceil(rect.height),
       pixelRatio: 3,
-      filter: (node: HTMLElement) => {
-        const classList = node.classList
-        if (!classList) {
-          return true
-        }
-        if (
-          classList.contains('react-flow__panel') ||
-          classList.contains('react-flow__controls') ||
-          classList.contains('react-flow__background') ||
-          classList.contains('likec4-navigation-panel')
-        ) {
-          return false
-        }
-        return true
-      },
     }
     console.time('toPng')
     const dataUrl = await toPng(diagramViewport, options)
     console.timeEnd('toPng')
     if (dataUrl && dataUrl.startsWith('data:image/png')) {
       const base64Png = dataUrl.split(',')[1]!
+      clearExportViewport?.()
       return {
         base64Png,
         error: null,
@@ -229,6 +229,7 @@ ExtensionApi.onExportPngRequest(async () => {
     const blob = await toBlob(diagramViewport, options)
     console.timeEnd('toBlob')
     if (!blob || blob.size === 0) {
+      clearExportViewport?.()
       return {
         base64Png: null,
         error: 'Failed to export PNG',
@@ -236,12 +237,14 @@ ExtensionApi.onExportPngRequest(async () => {
     }
 
     const base64Png = base64FromArrayBuffer(await blob.arrayBuffer())
+    clearExportViewport?.()
     return {
       base64Png,
       error: null,
     }
   } catch (err) {
     console.error(err)
+    clearExportViewport?.()
     return {
       base64Png: null,
       error: 'Failed to export PNG',
@@ -251,17 +254,12 @@ ExtensionApi.onExportPngRequest(async () => {
 
 ExtensionApi.onExportSvgRequest(async () => {
   console.log('[likec4-preview] export-svg request')
-  const root = document.querySelector<HTMLElement>('[data-likec4-diagram]')
-  if (!root) {
-    console.warn('[likec4-preview] export-svg: diagram not found')
-    return {
-      svg: null,
-      error: 'Diagram not found',
-    }
-  }
-  const diagramViewport = root.querySelector<HTMLElement>('.react-flow__viewport')
+  const diagramViewport = exportViewportProvider
+    ? await exportViewportProvider()
+    : null
   if (!diagramViewport) {
     console.warn('[likec4-preview] export-svg: react-flow viewport not found')
+    clearExportViewport?.()
     return {
       svg: null,
       error: 'Diagram viewport not found',
@@ -270,6 +268,7 @@ ExtensionApi.onExportSvgRequest(async () => {
   const rect = diagramViewport.getBoundingClientRect()
   if (rect.width <= 0 || rect.height <= 0) {
     console.warn('[likec4-preview] export-svg: diagram has zero size', rect)
+    clearExportViewport?.()
     return {
       svg: null,
       error: 'Diagram is not ready to export',
@@ -284,26 +283,12 @@ ExtensionApi.onExportSvgRequest(async () => {
       width: Math.ceil(rect.width),
       height: Math.ceil(rect.height),
       pixelRatio: 1,
-      filter: (node: HTMLElement) => {
-        const classList = node.classList
-        if (!classList) {
-          return true
-        }
-        if (
-          classList.contains('react-flow__panel') ||
-          classList.contains('react-flow__controls') ||
-          classList.contains('react-flow__background') ||
-          classList.contains('likec4-navigation-panel')
-        ) {
-          return false
-        }
-        return true
-      },
     }
     console.time('toSvg')
     const dataUrl = await toSvg(diagramViewport, options)
     console.timeEnd('toSvg')
     if (!dataUrl || !dataUrl.startsWith('data:image/svg+xml')) {
+      clearExportViewport?.()
       return {
         svg: null,
         error: 'Failed to export SVG',
@@ -311,12 +296,14 @@ ExtensionApi.onExportSvgRequest(async () => {
     }
     const encoded = dataUrl.split(',')[1] ?? ''
     const svg = decodeURIComponent(encoded)
+    clearExportViewport?.()
     return {
       svg,
       error: null,
     }
   } catch (err) {
     console.error(err)
+    clearExportViewport?.()
     return {
       svg: null,
       error: 'Failed to export SVG',
