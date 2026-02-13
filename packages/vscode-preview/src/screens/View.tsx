@@ -1,6 +1,13 @@
 import type { ProjectId, scalar } from '@likec4/core'
 import { LikeC4Model } from '@likec4/core/model'
-import { LikeC4Diagram, LikeC4EditorProvider, LikeC4ModelProvider, pickViewBounds } from '@likec4/diagram'
+import type { DynamicViewDisplayVariant } from '@likec4/core/types'
+import {
+  LikeC4Diagram,
+  LikeC4EditorProvider,
+  LikeC4ModelProvider,
+  pickViewBounds,
+  useDiagramContext,
+} from '@likec4/diagram'
 import { Button, Overlay } from '@mantine/core'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { only } from 'remeda'
@@ -33,13 +40,33 @@ const exportBaseStyle = {
 
 const EXPORT_PADDING = 20
 const EXPORT_EXTRA_PADDING = 16
-const DYNAMIC_VIEW_VARIANT = 'sequence' as const
+const DEFAULT_DYNAMIC_VIEW_VARIANT: DynamicViewDisplayVariant = 'diagram'
 const MAIN_FIT_VIEW_PADDING = {
   top: '70px',
   bottom: '30px',
   left: '60px',
   right: '30px',
 } as const
+
+function DynamicViewVariantTracker({
+  onSync,
+}: {
+  onSync: (variant: DynamicViewDisplayVariant) => void
+}) {
+  const variant = useDiagramContext(ctx => ctx.dynamicViewVariant)
+  const lastLoggedVariantRef = useRef<DynamicViewDisplayVariant | null>(null)
+
+  useEffect(() => {
+    onSync(variant)
+
+    if (lastLoggedVariantRef.current !== variant) {
+      console.log('[likec4-preview] dynamic view variant changed', variant)
+      lastLoggedVariantRef.current = variant
+    }
+  }, [onSync, variant])
+
+  return null
+}
 
 export function ViewScreen() {
   const { error, model } = useComputedModelData()
@@ -78,14 +105,23 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
 
   const exportViewportRef = useRef<HTMLDivElement>(null)
   const exportResolverRef = useRef<((el: HTMLElement | null) => void) | null>(null)
-  const [renderExportViewport, setRenderExportViewport] = useState(false)
+  const dynamicViewVariantRef = useRef<DynamicViewDisplayVariant>(DEFAULT_DYNAMIC_VIEW_VARIANT)
 
-  // idempotent export-viewport state toggling to avoid redundant rerenders
+  const [renderExportViewport, setRenderExportViewport] = useState(false)
+  const [exportDynamicViewVariant, setExportDynamicViewVariant] = useState<DynamicViewDisplayVariant>(
+    DEFAULT_DYNAMIC_VIEW_VARIANT,
+  )
+
   const setRenderExportViewportState = useCallback((value: boolean) => {
     setRenderExportViewport(prev => (prev === value ? prev : value))
   }, [])
 
-  const bounds = useMemo(() => pickViewBounds(view!, DYNAMIC_VIEW_VARIANT), [view])
+  const syncDynamicViewVariantRef = useCallback((value: DynamicViewDisplayVariant) => {
+    dynamicViewVariantRef.current = value
+  }, [])
+
+  const exportDynamicVariant = view?._type === 'dynamic' ? exportDynamicViewVariant : undefined
+  const bounds = useMemo(() => pickViewBounds(view!, exportDynamicVariant), [view, exportDynamicVariant])
   const exportWidth = Math.max(1, Math.ceil(bounds.width + EXPORT_PADDING * 2 + EXPORT_EXTRA_PADDING))
   const exportHeight = Math.max(1, Math.ceil(bounds.height + EXPORT_PADDING * 2 + EXPORT_EXTRA_PADDING))
 
@@ -121,6 +157,10 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
           resolve(el)
         }
 
+        setExportDynamicViewVariant(prev => {
+          const next = dynamicViewVariantRef.current
+          return prev === next ? prev : next
+        })
         setRenderExportViewportState(true)
       })
     }, () => {
@@ -136,6 +176,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
       resolveExportViewport(null)
       return
     }
+
     console.log('[likec4-preview] export view ready', view.id, projectId)
 
     const x = Math.round(-bounds.x + EXPORT_PADDING)
@@ -148,7 +189,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
 
     const el = root.querySelector<HTMLElement>('.react-flow') ?? null
     resolveExportViewport(el)
-  }, [bounds, resolveExportViewport])
+  }, [bounds, projectId, resolveExportViewport, view.id])
 
   if (!view) {
     return (
@@ -218,7 +259,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
               })
             }
           }}
-          onEdgeContextMenu={(_edge, event) => {
+          onEdgeContextMenu={(edge, event) => {
             setLastClickedNode()
             event.stopPropagation()
             event.preventDefault()
@@ -244,7 +285,9 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
           }}
           onLogoClick={openProjectsScreen}
           onLayoutTypeChange={setLayoutType}
-        />
+        >
+          {view._type === 'dynamic' && <DynamicViewVariantTracker onSync={syncDynamicViewVariantRef} />}
+        </LikeC4Diagram>
         {error && (
           <>
             <Overlay blur={2} backgroundOpacity={0.2} />
@@ -261,7 +304,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
             fitViewPadding={0}
             background="transparent"
             reduceGraphics={false}
-            dynamicViewVariant={DYNAMIC_VIEW_VARIANT}
+            dynamicViewVariant={exportDynamicVariant}
             pannable={false}
             zoomable={false}
             controls={false}
