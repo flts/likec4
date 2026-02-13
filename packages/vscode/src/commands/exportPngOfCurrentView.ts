@@ -26,27 +26,42 @@ export function registerExportPngOfCurrentViewCommand({
     await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
       title: 'Exporting PNG',
-      cancellable: false,
-    }, async () => {
+      cancellable: true,
+    }, async (_progress, token) => {
+      const ensureNotCancelled = () => {
+        if (token.isCancellationRequested) {
+          throw new vscode.CancellationError()
+        }
+      }
+      const cancelled = new Promise<never>((_, reject) => {
+        token.onCancellationRequested(() => reject(new vscode.CancellationError()))
+      })
+
       const isPreviewWarm = toValue(preview.visible) &&
         toValue(preview.viewId) === viewId &&
         toValue(preview.projectId) === projectId
 
+      ensureNotCancelled()
       if (!isPreviewWarm) {
         preview.open({ viewId, projectId })
       }
 
-      const isReady = await preview.waitForReady({
-        viewId,
-        projectId,
-        timeoutMs: isPreviewWarm ? 1_500 : 10_000,
-      })
+      const isReady = await Promise.race([
+        preview.waitForReady({
+          viewId,
+          projectId,
+          timeoutMs: isPreviewWarm ? 1_500 : 10_000,
+        }),
+        cancelled,
+      ])
       if (!isReady) {
         await vscode.window.showWarningMessage(
           'Preview is not ready for export. Try again after it finishes rendering.',
         )
         return
       }
+      ensureNotCancelled()
+
       const pixelRatio = vscode.workspace
         .getConfiguration('likec4')
         .get<number>('export.pngPixelRatio', 3)
@@ -57,17 +72,27 @@ export function registerExportPngOfCurrentViewCommand({
         .getConfiguration('likec4')
         .get<number>('export.imageMaxHeight', 8192)
 
-      const result = await preview.exportPng({
-        pixelRatio,
-        maxWidth,
-        maxHeight,
-      })
+      const result = await Promise.race([
+        preview.exportPng({
+          pixelRatio,
+          maxWidth,
+          maxHeight,
+        }),
+        cancelled,
+      ])
       if (!result.pngBytes || result.pngBytes.length <= 0) {
         await vscode.window.showWarningMessage(result.error ?? 'Failed to export PNG.')
         return
       }
+      ensureNotCancelled()
+
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri
-      const defaultUri = workspaceFolder ? vscode.Uri.joinPath(workspaceFolder, `${viewId}.png`) : undefined
+      const filename = result.exportViewKind === 'sequence'
+        ? `${viewId}.sequence.png`
+        : result.exportViewKind === 'deployment'
+        ? `${viewId}.deployment.png`
+        : `${viewId}.png`
+      const defaultUri = workspaceFolder ? vscode.Uri.joinPath(workspaceFolder, filename) : undefined
       const uri = await vscode.window.showSaveDialog({
         ...(defaultUri ? { defaultUri } : {}),
         filters: {
@@ -78,7 +103,13 @@ export function registerExportPngOfCurrentViewCommand({
       if (!uri) {
         return
       }
+      ensureNotCancelled()
       await vscode.workspace.fs.writeFile(uri, result.pngBytes)
+    }).then(undefined, async (error) => {
+      if (error instanceof vscode.CancellationError) {
+        return
+      }
+      throw error
     })
   })
 }

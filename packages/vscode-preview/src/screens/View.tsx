@@ -104,7 +104,12 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
   } = useDiagramView(projectId)
 
   const exportViewportRef = useRef<HTMLDivElement>(null)
-  const exportResolverRef = useRef<((el: HTMLElement | null) => void) | null>(null)
+  const exportResolverRef = useRef<
+    ((payload: {
+      element: HTMLElement | null
+      exportViewKind: 'sequence' | 'deployment' | null
+    }) => void) | null
+  >(null)
   const dynamicViewVariantRef = useRef<DynamicViewDisplayVariant>(DEFAULT_DYNAMIC_VIEW_VARIANT)
 
   const [renderExportViewport, setRenderExportViewport] = useState(false)
@@ -136,36 +141,41 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
     [exportWidth, exportHeight],
   )
 
-  const resolveExportViewport = useCallback((el: HTMLElement | null) => {
+  const resolveExportViewport = useCallback((payload: {
+    element: HTMLElement | null
+    exportViewKind: 'sequence' | 'deployment' | null
+  }) => {
     const resolve = exportResolverRef.current
     exportResolverRef.current = null
-    resolve?.(el)
+    resolve?.(payload)
   }, [])
 
   useEffect(() => {
     return extensionApi.registerExportViewportProvider(async () => {
-      return await new Promise<HTMLElement | null>(resolve => {
-        const timeout = window.setTimeout(() => {
-          if (exportResolverRef.current) {
-            resolveExportViewport(null)
-            setRenderExportViewportState(false)
+      return await new Promise<{ element: HTMLElement | null; exportViewKind: 'sequence' | 'deployment' | null }>(
+        resolve => {
+          const timeout = window.setTimeout(() => {
+            if (exportResolverRef.current) {
+              resolveExportViewport({ element: null, exportViewKind: null })
+              setRenderExportViewportState(false)
+            }
+          }, 5000)
+
+          exportResolverRef.current = (payload) => {
+            window.clearTimeout(timeout)
+            resolve(payload)
           }
-        }, 5000)
 
-        exportResolverRef.current = (el: HTMLElement | null) => {
-          window.clearTimeout(timeout)
-          resolve(el)
-        }
-
-        setExportDynamicViewVariant(prev => {
-          const next = dynamicViewVariantRef.current
-          return prev === next ? prev : next
-        })
-        setRenderExportViewportState(true)
-      })
+          setExportDynamicViewVariant(prev => {
+            const next = dynamicViewVariantRef.current
+            return prev === next ? prev : next
+          })
+          setRenderExportViewportState(true)
+        },
+      )
     }, () => {
       setRenderExportViewportState(false)
-      resolveExportViewport(null)
+      resolveExportViewport({ element: null, exportViewKind: null })
     })
   }, [resolveExportViewport, setRenderExportViewportState])
 
@@ -173,7 +183,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
     const root = exportViewportRef.current
     if (!root || !bounds) {
       console.error('exportViewportRef.current is null')
-      resolveExportViewport(null)
+      resolveExportViewport({ element: null, exportViewKind: null })
       return
     }
 
@@ -188,8 +198,16 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
     }
 
     const el = root.querySelector<HTMLElement>('.react-flow') ?? null
-    resolveExportViewport(el)
-  }, [bounds, projectId, resolveExportViewport, view.id])
+    const exportViewKind = view?._type === 'deployment'
+      ? 'deployment'
+      : view?._type === 'dynamic' && exportDynamicViewVariant === 'sequence'
+      ? 'sequence'
+      : null
+    resolveExportViewport({
+      element: el,
+      exportViewKind,
+    })
+  }, [bounds, exportDynamicViewVariant, projectId, resolveExportViewport, view?._type, view.id])
 
   if (!view) {
     return (

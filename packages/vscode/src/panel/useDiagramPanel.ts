@@ -336,6 +336,7 @@ export const useDiagramPanel = createSingletonComposable(() => {
       }
       return {
         pngBytes: null,
+        exportViewKind: null,
         error: 'No preview panel found',
       }
     },
@@ -350,6 +351,7 @@ export const useDiagramPanel = createSingletonComposable(() => {
       }
       return {
         svg: null,
+        exportViewKind: null,
         error: 'No preview panel found',
       }
     },

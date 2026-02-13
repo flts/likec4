@@ -60,6 +60,7 @@ export const ExportPng: RequestType<{
   maxHeight?: number
 }, {
   pngBytes: Uint8Array | null
+  exportViewKind: 'sequence' | 'deployment' | null
   error: string | null
 }> = {
   method: 'export-png',
@@ -72,6 +73,7 @@ export const ExportSvg: RequestType<{
   maxHeight?: number
 }, {
   svg: string | null
+  exportViewKind: 'sequence' | 'deployment' | null
   error: string | null
 }> = {
   method: 'export-svg',

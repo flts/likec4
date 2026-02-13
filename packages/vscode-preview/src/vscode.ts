@@ -151,7 +151,7 @@ export const ExtensionApi = {
   },
 
   registerExportViewportProvider: (
-    provider: () => Promise<HTMLElement | null>,
+    provider: () => Promise<ExportViewportPayload>,
     onClear?: (() => void) | undefined,
   ) => {
     exportViewportProvider = provider
@@ -168,7 +168,11 @@ export const ExtensionApi = {
 }
 
 const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
-let exportViewportProvider: null | (() => Promise<HTMLElement | null>) = null
+type ExportViewportPayload = {
+  element: HTMLElement | null
+  exportViewKind: 'sequence' | 'deployment' | null
+}
+let exportViewportProvider: null | (() => Promise<ExportViewportPayload>) = null
 let clearExportViewport: null | (() => void) = null
 
 function applySvgMaxDimensions(
@@ -218,14 +222,16 @@ ExtensionApi.onExportPngRequest(async (params) => {
     ? Math.max(512, Math.floor(Number(params?.maxHeight)))
     : Number.POSITIVE_INFINITY
 
-  const diagramViewport = exportViewportProvider
+  const exportViewport = exportViewportProvider
     ? await exportViewportProvider()
-    : null
+    : { element: null, exportViewKind: null }
+  const diagramViewport = exportViewport.element
   if (!diagramViewport) {
     console.warn('[likec4-preview] export-png: react-flow viewport not found')
     clearExportViewport?.()
     return {
       pngBytes: null,
+      exportViewKind: exportViewport.exportViewKind,
       error: 'Diagram viewport not found',
     }
   }
@@ -235,6 +241,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
     clearExportViewport?.()
     return {
       pngBytes: null,
+      exportViewKind: exportViewport.exportViewKind,
       error: 'Diagram is not ready to export',
     }
   }
@@ -261,6 +268,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
       clearExportViewport?.()
       return {
         pngBytes: null,
+        exportViewKind: exportViewport.exportViewKind,
         error: 'Failed to export PNG',
       }
     }
@@ -269,6 +277,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
     clearExportViewport?.()
     return {
       pngBytes,
+      exportViewKind: exportViewport.exportViewKind,
       error: null,
     }
   } catch (err) {
@@ -276,6 +285,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
     clearExportViewport?.()
     return {
       pngBytes: null,
+      exportViewKind: exportViewport.exportViewKind,
       error: 'Failed to export PNG',
     }
   }
@@ -290,14 +300,16 @@ ExtensionApi.onExportSvgRequest(async (params) => {
     ? Math.max(512, Math.floor(Number(params?.maxHeight)))
     : Number.POSITIVE_INFINITY
 
-  const diagramViewport = exportViewportProvider
+  const exportViewport = exportViewportProvider
     ? await exportViewportProvider()
-    : null
+    : { element: null, exportViewKind: null }
+  const diagramViewport = exportViewport.element
   if (!diagramViewport) {
     console.warn('[likec4-preview] export-svg: react-flow viewport not found')
     clearExportViewport?.()
     return {
       svg: null,
+      exportViewKind: exportViewport.exportViewKind,
       error: 'Diagram viewport not found',
     }
   }
@@ -307,6 +319,7 @@ ExtensionApi.onExportSvgRequest(async (params) => {
     clearExportViewport?.()
     return {
       svg: null,
+      exportViewKind: exportViewport.exportViewKind,
       error: 'Diagram is not ready to export',
     }
   }
@@ -329,6 +342,7 @@ ExtensionApi.onExportSvgRequest(async (params) => {
       clearExportViewport?.()
       return {
         svg: null,
+        exportViewKind: exportViewport.exportViewKind,
         error: 'Failed to export SVG',
       }
     }
@@ -338,6 +352,7 @@ ExtensionApi.onExportSvgRequest(async (params) => {
     clearExportViewport?.()
     return {
       svg,
+      exportViewKind: exportViewport.exportViewKind,
       error: null,
     }
   } catch (err) {
@@ -345,6 +360,7 @@ ExtensionApi.onExportSvgRequest(async (params) => {
     clearExportViewport?.()
     return {
       svg: null,
+      exportViewKind: exportViewport.exportViewKind,
       error: 'Failed to export SVG',
     }
   }
