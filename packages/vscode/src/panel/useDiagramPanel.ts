@@ -324,15 +324,16 @@ export const useDiagramPanel = createSingletonComposable(() => {
         setTimeout(() => resolve(false), timeoutMs)
       })
     },
-    exportPng: async () => {
+    exportPng: async (params?: { pixelRatio?: number }) => {
       if (state.participant) {
         return await useMessenger().requestExportPng(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
+          pixelRatio: params?.pixelRatio,
         })
       }
       return {
-        base64Png: null,
+        pngBytes: null,
         error: 'No preview panel found',
       }
     },

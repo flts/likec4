@@ -9,18 +9,6 @@ export interface ExportPngOfCurrentViewDeps {
   preview: PreviewPanel
 }
 
-function decodeBase64ToBytes(base64: string): Uint8Array {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(base64, 'base64')
-  }
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return bytes
-}
-
 export function registerExportPngOfCurrentViewCommand({
   sendTelemetry,
   preview,
@@ -40,16 +28,32 @@ export function registerExportPngOfCurrentViewCommand({
       title: 'Exporting PNG',
       cancellable: false,
     }, async () => {
-      preview.open({ viewId, projectId })
-      const isReady = await preview.waitForReady({ viewId, projectId, timeoutMs: 10_000 })
+      const isPreviewWarm = toValue(preview.visible) &&
+        toValue(preview.viewId) === viewId &&
+        toValue(preview.projectId) === projectId
+
+      if (!isPreviewWarm) {
+        preview.open({ viewId, projectId })
+      }
+
+      const isReady = await preview.waitForReady({
+        viewId,
+        projectId,
+        timeoutMs: isPreviewWarm ? 1_500 : 10_000,
+      })
       if (!isReady) {
         await vscode.window.showWarningMessage(
           'Preview is not ready for export. Try again after it finishes rendering.',
         )
         return
       }
-      const result = await preview.exportPng()
-      if (!result.base64Png) {
+      const configuredPixelRatio = vscode.workspace
+        .getConfiguration('likec4')
+        .get<number>('export.pngPixelRatio', 3)
+      const pixelRatio = Math.min(4, Math.max(1, configuredPixelRatio ?? 3))
+
+      const result = await preview.exportPng({ pixelRatio })
+      if (!result.pngBytes || result.pngBytes.length <= 0) {
         await vscode.window.showWarningMessage(result.error ?? 'Failed to export PNG.')
         return
       }
@@ -65,8 +69,7 @@ export function registerExportPngOfCurrentViewCommand({
       if (!uri) {
         return
       }
-      const bytes = decodeBase64ToBytes(result.base64Png)
-      await vscode.workspace.fs.writeFile(uri, bytes)
+      await vscode.workspace.fs.writeFile(uri, result.pngBytes)
     })
   })
 }

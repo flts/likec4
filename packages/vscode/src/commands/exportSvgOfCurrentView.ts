@@ -2,7 +2,6 @@ import { toValue, useCommand } from 'reactive-vscode'
 import * as vscode from 'vscode'
 import { commands } from '../meta'
 import { useExtensionLogger } from '../useExtensionLogger'
-import { saveTextToFile } from './exportViewSource'
 import type { PreviewPanel } from './types'
 
 export interface ExportSvgOfCurrentViewDeps {
@@ -29,8 +28,19 @@ export function registerExportSvgOfCurrentViewCommand({
       title: 'Exporting SVG (manual layout)',
       cancellable: false,
     }, async () => {
-      preview.open({ viewId, projectId })
-      const isReady = await preview.waitForReady({ viewId, projectId, timeoutMs: 10_000 })
+      const isPreviewWarm = toValue(preview.visible) &&
+        toValue(preview.viewId) === viewId &&
+        toValue(preview.projectId) === projectId
+
+      if (!isPreviewWarm) {
+        preview.open({ viewId, projectId })
+      }
+
+      const isReady = await preview.waitForReady({
+        viewId,
+        projectId,
+        timeoutMs: isPreviewWarm ? 1_500 : 10_000,
+      })
       if (!isReady) {
         await vscode.window.showWarningMessage(
           'Preview is not ready for export. Try again after it finishes rendering.',
@@ -42,11 +52,20 @@ export function registerExportSvgOfCurrentViewCommand({
         await vscode.window.showWarningMessage(result.error ?? 'Failed to export SVG.')
         return
       }
-      await saveTextToFile(result.svg, {
-        defaultFileName: `${viewId}.svg`,
-        extension: 'svg',
-        label: 'SVG (manual layout)',
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri
+      const defaultUri = workspaceFolder ? vscode.Uri.joinPath(workspaceFolder, `${viewId}.svg`) : undefined
+      const uri = await vscode.window.showSaveDialog({
+        defaultUri,
+        filters: {
+          SVG: ['svg'],
+        },
+        saveLabel: 'Save SVG (manual layout)',
       })
+      if (!uri) {
+        return
+      }
+      const data = new TextEncoder().encode(result.svg)
+      await vscode.workspace.fs.writeFile(uri, data)
     })
   })
 }

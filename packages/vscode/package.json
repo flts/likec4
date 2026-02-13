@@ -186,6 +186,13 @@
           "items": {
             "type": "string"
           }
+        },
+        "likec4.export.pngPixelRatio": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Pixel ratio used for PNG export from preview. Higher values improve quality but can significantly increase export time and memory usage."
         }
       }
     },

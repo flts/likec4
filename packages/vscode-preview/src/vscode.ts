@@ -7,7 +7,7 @@ import type {
   ViewChange,
   ViewId,
 } from '@likec4/core/types'
-import { toBlob, toPng, toSvg } from 'html-to-image'
+import { toBlob, toSvg } from 'html-to-image'
 import { CancellationTokenImpl, HOST_EXTENSION } from 'vscode-messenger-common'
 import { Messenger } from 'vscode-messenger-webview'
 import {
@@ -171,17 +171,13 @@ const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEA
 let exportViewportProvider: null | (() => Promise<HTMLElement | null>) = null
 let clearExportViewport: null | (() => void) = null
 
-function base64FromArrayBuffer(buffer: ArrayBuffer) {
-  let binary = ''
-  const bytes = new Uint8Array(buffer)
-  for (let i = 0; i < bytes.length; i += 1) {
-    binary += String.fromCharCode(bytes[i]!)
-  }
-  return btoa(binary)
-}
-
-ExtensionApi.onExportPngRequest(async () => {
+ExtensionApi.onExportPngRequest(async (params) => {
   console.log('[likec4-preview] export-png request')
+  const requestedPixelRatio = params?.pixelRatio
+  const pixelRatio = Number.isFinite(requestedPixelRatio)
+    ? Math.min(4, Math.max(1, Number(requestedPixelRatio)))
+    : 3
+
   const diagramViewport = exportViewportProvider
     ? await exportViewportProvider()
     : null
@@ -189,7 +185,7 @@ ExtensionApi.onExportPngRequest(async () => {
     console.warn('[likec4-preview] export-png: react-flow viewport not found')
     clearExportViewport?.()
     return {
-      base64Png: null,
+      pngBytes: null,
       error: 'Diagram viewport not found',
     }
   }
@@ -198,55 +194,42 @@ ExtensionApi.onExportPngRequest(async () => {
     console.warn('[likec4-preview] export-png: diagram has zero size', rect)
     clearExportViewport?.()
     return {
-      base64Png: null,
+      pngBytes: null,
       error: 'Diagram is not ready to export',
     }
   }
   try {
-    await new Promise(requestAnimationFrame)
     const options = {
       backgroundColor: 'transparent',
-      cacheBust: true,
+      cacheBust: false,
       imagePlaceholder: emptyGif,
       width: Math.ceil(rect.width),
       height: Math.ceil(rect.height),
-      pixelRatio: 3,
+      pixelRatio,
     }
-    console.time('toPng')
-    const dataUrl = await toPng(diagramViewport, options)
-    console.timeEnd('toPng')
-    if (dataUrl && dataUrl.startsWith('data:image/png')) {
-      const base64Png = dataUrl.split(',')[1]!
-      clearExportViewport?.()
-      return {
-        base64Png,
-        error: null,
-      }
-    }
-
-    // fallback to toBlob if toPng fails
-    console.time('toBlob')
+    // use toBlob directly to avoid expensive data URL roundtrip
+    console.time('toBlob (PNG)')
     const blob = await toBlob(diagramViewport, options)
-    console.timeEnd('toBlob')
+    console.timeEnd('toBlob (PNG)')
     if (!blob || blob.size === 0) {
       clearExportViewport?.()
       return {
-        base64Png: null,
+        pngBytes: null,
         error: 'Failed to export PNG',
       }
     }
 
-    const base64Png = base64FromArrayBuffer(await blob.arrayBuffer())
+    const pngBytes = new Uint8Array(await blob.arrayBuffer())
     clearExportViewport?.()
     return {
-      base64Png,
+      pngBytes,
       error: null,
     }
   } catch (err) {
     console.error(err)
     clearExportViewport?.()
     return {
-      base64Png: null,
+      pngBytes: null,
       error: 'Failed to export PNG',
     }
   }
@@ -275,7 +258,6 @@ ExtensionApi.onExportSvgRequest(async () => {
     }
   }
   try {
-    await new Promise(requestAnimationFrame)
     const options = {
       backgroundColor: 'transparent',
       cacheBust: false,
@@ -294,6 +276,7 @@ ExtensionApi.onExportSvgRequest(async () => {
         error: 'Failed to export SVG',
       }
     }
+
     const encoded = dataUrl.split(',')[1] ?? ''
     const svg = decodeURIComponent(encoded)
     clearExportViewport?.()

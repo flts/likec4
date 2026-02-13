@@ -55,8 +55,9 @@ export const FetchProjectsOverview: RequestType<never, { projectsView: LayoutedP
 export const ExportPng: RequestType<{
   projectId: ProjectId
   viewId: ViewId
+  pixelRatio?: number
 }, {
-  base64Png: string | null
+  pngBytes: Uint8Array | null
   error: string | null
 }> = {
   method: 'export-png',
