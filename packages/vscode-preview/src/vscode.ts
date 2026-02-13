@@ -171,12 +171,52 @@ const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEA
 let exportViewportProvider: null | (() => Promise<HTMLElement | null>) = null
 let clearExportViewport: null | (() => void) = null
 
+function applySvgMaxDimensions(
+  svgText: string,
+  sourceWidth: number,
+  sourceHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+) {
+  if (!Number.isFinite(maxWidth) && !Number.isFinite(maxHeight)) {
+    return svgText
+  }
+
+  const ratioByWidth = Number.isFinite(maxWidth) ? maxWidth / Math.max(1, sourceWidth) : Number.POSITIVE_INFINITY
+  const ratioByHeight = Number.isFinite(maxHeight) ? maxHeight / Math.max(1, sourceHeight) : Number.POSITIVE_INFINITY
+  const scale = Math.max(0.1, Math.min(1, ratioByWidth, ratioByHeight))
+  if (scale >= 1) {
+    return svgText
+  }
+
+  const targetWidth = Math.max(1, Math.floor(sourceWidth * scale))
+  const targetHeight = Math.max(1, Math.floor(sourceHeight * scale))
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(svgText, 'image/svg+xml')
+  const root = doc.documentElement
+  if (!root || root.nodeName.toLowerCase() !== 'svg') {
+    return svgText
+  }
+
+  root.setAttribute('viewBox', `0 0 ${sourceWidth} ${sourceHeight}`)
+  root.setAttribute('width', String(targetWidth))
+  root.setAttribute('height', String(targetHeight))
+  if (!root.getAttribute('preserveAspectRatio')) {
+    root.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+  }
+
+  return new XMLSerializer().serializeToString(root)
+}
+
 ExtensionApi.onExportPngRequest(async (params) => {
   console.log('[likec4-preview] export-png request')
-  const requestedPixelRatio = params?.pixelRatio
-  const pixelRatio = Number.isFinite(requestedPixelRatio)
-    ? Math.min(4, Math.max(1, Number(requestedPixelRatio)))
-    : 3
+  const pixelRatio = Number.isFinite(params?.pixelRatio) ? Math.min(4, Math.max(1, Number(params?.pixelRatio))) : 3
+  const maxWidth = Number.isFinite(params?.maxWidth)
+    ? Math.max(512, Math.floor(Number(params?.maxWidth)))
+    : Number.POSITIVE_INFINITY
+  const maxHeight = Number.isFinite(params?.maxHeight)
+    ? Math.max(512, Math.floor(Number(params?.maxHeight)))
+    : Number.POSITIVE_INFINITY
 
   const diagramViewport = exportViewportProvider
     ? await exportViewportProvider()
@@ -199,13 +239,19 @@ ExtensionApi.onExportPngRequest(async (params) => {
     }
   }
   try {
+    const width = Math.ceil(rect.width)
+    const height = Math.ceil(rect.height)
+    const ratioByWidth = Number.isFinite(maxWidth) ? maxWidth / Math.max(1, width) : Number.POSITIVE_INFINITY
+    const ratioByHeight = Number.isFinite(maxHeight) ? maxHeight / Math.max(1, height) : Number.POSITIVE_INFINITY
+    const effectivePixelRatio = Math.max(0.1, Math.min(pixelRatio, ratioByWidth, ratioByHeight))
+
     const options = {
       backgroundColor: 'transparent',
       cacheBust: false,
       imagePlaceholder: emptyGif,
-      width: Math.ceil(rect.width),
-      height: Math.ceil(rect.height),
-      pixelRatio,
+      width,
+      height,
+      pixelRatio: effectivePixelRatio,
     }
     // use toBlob directly to avoid expensive data URL roundtrip
     console.time('toBlob (PNG)')
@@ -235,8 +281,15 @@ ExtensionApi.onExportPngRequest(async (params) => {
   }
 })
 
-ExtensionApi.onExportSvgRequest(async () => {
+ExtensionApi.onExportSvgRequest(async (params) => {
   console.log('[likec4-preview] export-svg request')
+  const maxWidth = Number.isFinite(params?.maxWidth)
+    ? Math.max(512, Math.floor(Number(params?.maxWidth)))
+    : Number.POSITIVE_INFINITY
+  const maxHeight = Number.isFinite(params?.maxHeight)
+    ? Math.max(512, Math.floor(Number(params?.maxHeight)))
+    : Number.POSITIVE_INFINITY
+
   const diagramViewport = exportViewportProvider
     ? await exportViewportProvider()
     : null
@@ -258,12 +311,15 @@ ExtensionApi.onExportSvgRequest(async () => {
     }
   }
   try {
+    const width = Math.ceil(rect.width)
+    const height = Math.ceil(rect.height)
+
     const options = {
       backgroundColor: 'transparent',
       cacheBust: false,
       imagePlaceholder: emptyGif,
-      width: Math.ceil(rect.width),
-      height: Math.ceil(rect.height),
+      width,
+      height,
       pixelRatio: 1,
     }
     console.time('toSvg')
@@ -278,7 +334,7 @@ ExtensionApi.onExportSvgRequest(async () => {
     }
 
     const encoded = dataUrl.split(',')[1] ?? ''
-    const svg = decodeURIComponent(encoded)
+    const svg = applySvgMaxDimensions(decodeURIComponent(encoded), width, height, maxWidth, maxHeight)
     clearExportViewport?.()
     return {
       svg,

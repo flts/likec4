@@ -47,12 +47,21 @@ export function registerExportPngOfCurrentViewCommand({
         )
         return
       }
-      const configuredPixelRatio = vscode.workspace
+      const pixelRatio = vscode.workspace
         .getConfiguration('likec4')
         .get<number>('export.pngPixelRatio', 3)
-      const pixelRatio = Math.min(4, Math.max(1, configuredPixelRatio ?? 3))
+      const maxWidth = vscode.workspace
+        .getConfiguration('likec4')
+        .get<number>('export.imageMaxWidth', 8192)
+      const maxHeight = vscode.workspace
+        .getConfiguration('likec4')
+        .get<number>('export.imageMaxHeight', 8192)
 
-      const result = await preview.exportPng({ pixelRatio })
+      const result = await preview.exportPng({
+        pixelRatio,
+        maxWidth,
+        maxHeight,
+      })
       if (!result.pngBytes || result.pngBytes.length <= 0) {
         await vscode.window.showWarningMessage(result.error ?? 'Failed to export PNG.')
         return
@@ -60,7 +69,7 @@ export function registerExportPngOfCurrentViewCommand({
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri
       const defaultUri = workspaceFolder ? vscode.Uri.joinPath(workspaceFolder, `${viewId}.png`) : undefined
       const uri = await vscode.window.showSaveDialog({
-        defaultUri,
+        ...(defaultUri ? { defaultUri } : {}),
         filters: {
           PNG: ['png'],
         },

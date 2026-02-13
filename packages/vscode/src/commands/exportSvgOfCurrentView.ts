@@ -47,7 +47,17 @@ export function registerExportSvgOfCurrentViewCommand({
         )
         return
       }
-      const result = await preview.exportSvg()
+      const maxWidth = vscode.workspace
+        .getConfiguration('likec4')
+        .get<number>('export.imageMaxWidth', 8192)
+      const maxHeight = vscode.workspace
+        .getConfiguration('likec4')
+        .get<number>('export.imageMaxHeight', 8192)
+
+      const result = await preview.exportSvg({
+        maxWidth,
+        maxHeight,
+      })
       if (!result.svg) {
         await vscode.window.showWarningMessage(result.error ?? 'Failed to export SVG.')
         return
@@ -55,7 +65,7 @@ export function registerExportSvgOfCurrentViewCommand({
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri
       const defaultUri = workspaceFolder ? vscode.Uri.joinPath(workspaceFolder, `${viewId}.svg`) : undefined
       const uri = await vscode.window.showSaveDialog({
-        defaultUri,
+        ...(defaultUri ? { defaultUri } : {}),
         filters: {
           SVG: ['svg'],
         },

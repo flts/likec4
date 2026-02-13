@@ -56,6 +56,8 @@ export const ExportPng: RequestType<{
   projectId: ProjectId
   viewId: ViewId
   pixelRatio?: number
+  maxWidth?: number
+  maxHeight?: number
 }, {
   pngBytes: Uint8Array | null
   error: string | null
@@ -66,6 +68,8 @@ export const ExportPng: RequestType<{
 export const ExportSvg: RequestType<{
   projectId: ProjectId
   viewId: ViewId
+  maxWidth?: number
+  maxHeight?: number
 }, {
   svg: string | null
   error: string | null

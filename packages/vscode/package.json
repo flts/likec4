@@ -193,6 +193,18 @@
           "minimum": 1,
           "maximum": 4,
           "description": "Pixel ratio used for PNG export from preview. Higher values improve quality but can significantly increase export time and memory usage."
+        },
+        "likec4.export.imageMaxWidth": {
+          "type": "number",
+          "default": 8192,
+          "minimum": 512,
+          "description": "Maximum export output width in pixels (applies to PNG and SVG exports). Large diagrams may be downscaled to stay within this limit."
+        },
+        "likec4.export.imageMaxHeight": {
+          "type": "number",
+          "default": 8192,
+          "minimum": 512,
+          "description": "Maximum export output height in pixels (applies to PNG and SVG exports). Large diagrams may be downscaled to stay within this limit."
         }
       }
     },

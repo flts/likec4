@@ -324,12 +324,14 @@ export const useDiagramPanel = createSingletonComposable(() => {
         setTimeout(() => resolve(false), timeoutMs)
       })
     },
-    exportPng: async (params?: { pixelRatio?: number }) => {
+    exportPng: async (params?: { pixelRatio?: number; maxWidth?: number; maxHeight?: number }) => {
       if (state.participant) {
         return await useMessenger().requestExportPng(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
           pixelRatio: params?.pixelRatio,
+          maxWidth: params?.maxWidth,
+          maxHeight: params?.maxHeight,
         })
       }
       return {
@@ -337,11 +339,13 @@ export const useDiagramPanel = createSingletonComposable(() => {
         error: 'No preview panel found',
       }
     },
-    exportSvg: async () => {
+    exportSvg: async (params?: { maxWidth?: number; maxHeight?: number }) => {
       if (state.participant) {
         return await useMessenger().requestExportSvg(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
+          maxWidth: params?.maxWidth,
+          maxHeight: params?.maxHeight,
         })
       }
       return {
