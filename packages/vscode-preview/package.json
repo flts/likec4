@@ -46,7 +46,7 @@
     "@xyflow/system": "catalog:xyflow",
     "fast-equals": "catalog:utils",
     "esm-env": "catalog:utils",
-    "html-to-image": "1.11.13",
+    "html-to-image": "1.11.11",
     "nanostores": "catalog:react",
     "object-hash": "catalog:utils",
     "postcss": "catalog:css",
