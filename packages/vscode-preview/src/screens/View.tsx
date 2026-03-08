@@ -9,7 +9,7 @@ import {
   useDiagramContext,
 } from '@likec4/diagram'
 import { Button, Overlay } from '@mantine/core'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { only } from 'remeda'
 import { likec4Container, likec4ParsingScreen } from '../App.css'
 import { ErrorMessage } from '../QueryErrorBoundary'
@@ -47,6 +47,43 @@ const MAIN_FIT_VIEW_PADDING = {
   left: '60px',
   right: '30px',
 } as const
+
+type ExportViewportState = {
+  renderExportViewport: boolean
+  exportDynamicViewVariant: DynamicViewDisplayVariant
+}
+
+type ExportViewportAction =
+  | {
+    type: 'show-export-viewport'
+    variant: DynamicViewDisplayVariant
+  }
+  | {
+    type: 'hide-export-viewport'
+  }
+
+function exportViewportReducer(state: ExportViewportState, action: ExportViewportAction): ExportViewportState {
+  switch (action.type) {
+    case 'show-export-viewport':
+      if (state.renderExportViewport && state.exportDynamicViewVariant === action.variant) {
+        return state
+      }
+      return {
+        renderExportViewport: true,
+        exportDynamicViewVariant: action.variant,
+      }
+    case 'hide-export-viewport':
+      if (!state.renderExportViewport) {
+        return state
+      }
+      return {
+        ...state,
+        renderExportViewport: false,
+      }
+    default:
+      return state
+  }
+}
 
 function DynamicViewVariantTracker({
   onSync,
@@ -111,14 +148,13 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
   >(null)
   const dynamicViewVariantRef = useRef<DynamicViewDisplayVariant>(DEFAULT_DYNAMIC_VIEW_VARIANT)
 
-  const [renderExportViewport, setRenderExportViewport] = useState(false)
-  const [exportDynamicViewVariant, setExportDynamicViewVariant] = useState<DynamicViewDisplayVariant>(
-    DEFAULT_DYNAMIC_VIEW_VARIANT,
+  const [{ renderExportViewport, exportDynamicViewVariant }, dispatchExportViewport] = useReducer(
+    exportViewportReducer,
+    {
+      renderExportViewport: false,
+      exportDynamicViewVariant: DEFAULT_DYNAMIC_VIEW_VARIANT,
+    },
   )
-
-  const setRenderExportViewportState = useCallback((value: boolean) => {
-    setRenderExportViewport(prev => (prev === value ? prev : value))
-  }, [])
 
   const syncDynamicViewVariantRef = useCallback((value: DynamicViewDisplayVariant) => {
     dynamicViewVariantRef.current = value
@@ -156,7 +192,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
           const timeout = window.setTimeout(() => {
             if (exportResolverRef.current) {
               resolveExportViewport({ element: null, exportViewKind: null })
-              setRenderExportViewportState(false)
+              dispatchExportViewport({ type: 'hide-export-viewport' })
             }
           }, 5000)
 
@@ -165,18 +201,17 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
             resolve(payload)
           }
 
-          setExportDynamicViewVariant(prev => {
-            const next = dynamicViewVariantRef.current
-            return prev === next ? prev : next
+          dispatchExportViewport({
+            type: 'show-export-viewport',
+            variant: dynamicViewVariantRef.current,
           })
-          setRenderExportViewportState(true)
         },
       )
     }, () => {
-      setRenderExportViewportState(false)
+      dispatchExportViewport({ type: 'hide-export-viewport' })
       resolveExportViewport({ element: null, exportViewKind: null })
     })
-  }, [resolveExportViewport, setRenderExportViewportState])
+  }, [resolveExportViewport])
 
   const onExportDiagramReady = useCallback(() => {
     const root = exportViewportRef.current
