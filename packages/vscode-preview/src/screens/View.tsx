@@ -5,11 +5,10 @@ import {
   LikeC4Diagram,
   LikeC4EditorProvider,
   LikeC4ModelProvider,
-  pickViewBounds,
   useDiagramContext,
 } from '@likec4/diagram'
 import { Button, Overlay } from '@mantine/core'
-import { memo, useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { only } from 'remeda'
 import { likec4Container, likec4ParsingScreen } from '../App.css'
 import { ErrorMessage } from '../QueryErrorBoundary'
@@ -22,24 +21,8 @@ import {
   useLikeC4EditorPort,
 } from '../state'
 import { ExtensionApi as extensionApi } from '../vscode'
+import { ExportViewportSurface, useExportViewportProvider } from './ExportViewportSurface'
 
-const exportBaseStyle = {
-  position: 'fixed',
-  left: '-20000px',
-  top: 0,
-  padding: '0',
-  margin: '0',
-  marginRight: 'auto',
-  marginBottom: 'auto',
-  opacity: 0,
-  pointerEvents: 'none',
-  overflow: 'hidden',
-  background: 'transparent',
-  zIndex: 2,
-} as const
-
-const EXPORT_PADDING = 20
-const EXPORT_EXTRA_PADDING = 16
 const DEFAULT_DYNAMIC_VIEW_VARIANT: DynamicViewDisplayVariant = 'diagram'
 const MAIN_FIT_VIEW_PADDING = {
   top: '70px',
@@ -48,57 +31,15 @@ const MAIN_FIT_VIEW_PADDING = {
   right: '30px',
 } as const
 
-type ExportViewportState = {
-  renderExportViewport: boolean
-  exportDynamicViewVariant: DynamicViewDisplayVariant
-}
-
-type ExportViewportAction =
-  | {
-    type: 'show-export-viewport'
-    variant: DynamicViewDisplayVariant
-  }
-  | {
-    type: 'hide-export-viewport'
-  }
-
-function exportViewportReducer(state: ExportViewportState, action: ExportViewportAction): ExportViewportState {
-  switch (action.type) {
-    case 'show-export-viewport':
-      if (state.renderExportViewport && state.exportDynamicViewVariant === action.variant) {
-        return state
-      }
-      return {
-        renderExportViewport: true,
-        exportDynamicViewVariant: action.variant,
-      }
-    case 'hide-export-viewport':
-      if (!state.renderExportViewport) {
-        return state
-      }
-      return {
-        ...state,
-        renderExportViewport: false,
-      }
-    default:
-      return state
-  }
-}
-
 function DynamicViewVariantTracker({
   onSync,
 }: {
   onSync: (variant: DynamicViewDisplayVariant) => void
 }) {
   const variant = useDiagramContext(ctx => ctx.dynamicViewVariant)
-  const lastLoggedVariantRef = useRef<DynamicViewDisplayVariant | null>(null)
 
   useEffect(() => {
     onSync(variant)
-
-    if (lastLoggedVariantRef.current !== variant) {
-      lastLoggedVariantRef.current = variant
-    }
   }, [onSync, variant])
 
   return null
@@ -139,106 +80,21 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
     error,
   } = useDiagramView(projectId)
 
-  const exportViewportRef = useRef<HTMLDivElement>(null)
-  const exportResolverRef = useRef<
-    ((payload: {
-      element: HTMLElement | null
-      exportViewKind: 'sequence' | 'deployment' | null
-    }) => void) | null
-  >(null)
   const dynamicViewVariantRef = useRef<DynamicViewDisplayVariant>(DEFAULT_DYNAMIC_VIEW_VARIANT)
-
-  const [{ renderExportViewport, exportDynamicViewVariant }, dispatchExportViewport] = useReducer(
-    exportViewportReducer,
-    {
-      renderExportViewport: false,
-      exportDynamicViewVariant: DEFAULT_DYNAMIC_VIEW_VARIANT,
-    },
-  )
 
   const syncDynamicViewVariantRef = useCallback((value: DynamicViewDisplayVariant) => {
     dynamicViewVariantRef.current = value
   }, [])
 
-  const exportDynamicVariant = view?._type === 'dynamic' ? exportDynamicViewVariant : undefined
-  const bounds = useMemo(() => pickViewBounds(view!, exportDynamicVariant), [view, exportDynamicVariant])
-  const exportWidth = Math.max(1, Math.ceil(bounds.width + EXPORT_PADDING * 2 + EXPORT_EXTRA_PADDING))
-  const exportHeight = Math.max(1, Math.ceil(bounds.height + EXPORT_PADDING * 2 + EXPORT_EXTRA_PADDING))
-
-  const exportSurfaceStyle = useMemo(
-    () => ({
-      ...exportBaseStyle,
-      width: `${exportWidth}px`,
-      minWidth: `${exportWidth}px`,
-      height: `${exportHeight}px`,
-      minHeight: `${exportHeight}px`,
-    }),
-    [exportWidth, exportHeight],
-  )
-
-  const resolveExportViewport = useCallback((payload: {
-    element: HTMLElement | null
-    exportViewKind: 'sequence' | 'deployment' | null
-  }) => {
-    const resolve = exportResolverRef.current
-    exportResolverRef.current = null
-    resolve?.(payload)
-  }, [])
-
-  useEffect(() => {
-    return extensionApi.registerExportViewportProvider(async () => {
-      return await new Promise<{ element: HTMLElement | null; exportViewKind: 'sequence' | 'deployment' | null }>(
-        resolve => {
-          const timeout = window.setTimeout(() => {
-            if (exportResolverRef.current) {
-              resolveExportViewport({ element: null, exportViewKind: null })
-              dispatchExportViewport({ type: 'hide-export-viewport' })
-            }
-          }, 5000)
-
-          exportResolverRef.current = (payload) => {
-            window.clearTimeout(timeout)
-            resolve(payload)
-          }
-
-          dispatchExportViewport({
-            type: 'show-export-viewport',
-            variant: dynamicViewVariantRef.current,
-          })
-        },
-      )
-    }, () => {
-      dispatchExportViewport({ type: 'hide-export-viewport' })
-      resolveExportViewport({ element: null, exportViewKind: null })
-    })
-  }, [resolveExportViewport])
-
-  const onExportDiagramReady = useCallback(() => {
-    const root = exportViewportRef.current
-    if (!root || !bounds) {
-      resolveExportViewport({ element: null, exportViewKind: null })
-      return
-    }
-
-    const x = Math.round(-bounds.x + EXPORT_PADDING)
-    const y = Math.round(-bounds.y + EXPORT_PADDING)
-
-    const viewport = root.querySelector<HTMLElement>('.react-flow__viewport')
-    if (viewport) {
-      viewport.style.transform = `translate(${x}px, ${y}px)`
-    }
-
-    const el = root.querySelector<HTMLElement>('.react-flow') ?? null
-    const exportViewKind = view?._type === 'deployment'
-      ? 'deployment'
-      : view?._type === 'dynamic' && exportDynamicViewVariant === 'sequence'
-      ? 'sequence'
-      : null
-    resolveExportViewport({
-      element: el,
-      exportViewKind,
-    })
-  }, [bounds, exportDynamicViewVariant, projectId, resolveExportViewport, view?._type, view.id])
+  const {
+    renderExportViewport,
+    requestId,
+    exportDynamicVariant,
+    onSurfaceReady,
+  } = useExportViewportProvider({
+    viewType: view?._type,
+    currentDynamicViewVariantRef: dynamicViewVariantRef,
+  })
 
   if (!view) {
     return (
@@ -340,31 +196,12 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
       </div>
 
       {renderExportViewport && (
-        <div ref={exportViewportRef} style={exportSurfaceStyle}>
-          <LikeC4Diagram
-            view={view}
-            fitView={false}
-            fitViewPadding={0}
-            background="transparent"
-            reduceGraphics={false}
-            dynamicViewVariant={exportDynamicVariant}
-            pannable={false}
-            zoomable={false}
-            controls={false}
-            showNavigationButtons={false}
-            enableElementDetails={false}
-            enableRelationshipBrowser={false}
-            enableElementTags={false}
-            enableSearch={false}
-            enableRelationshipDetails={false}
-            enableCompareWithLatest={false}
-            enableNotations={false}
-            enableFocusMode={false}
-            enableDynamicViewWalkthrough={false}
-            nodesSelectable={false}
-            onInitialized={onExportDiagramReady}
-          />
-        </div>
+        <ExportViewportSurface
+          view={view}
+          requestId={requestId}
+          dynamicVariant={exportDynamicVariant}
+          onReady={onSurfaceReady}
+        />
       )}
     </>
   )
