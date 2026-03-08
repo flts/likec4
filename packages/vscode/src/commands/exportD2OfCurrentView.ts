@@ -5,37 +5,37 @@ import { useExtensionLogger } from '../useExtensionLogger'
 import { saveTextToFile } from './saveTextToFile'
 import type { PreviewPanel, RpcClient } from './types'
 
-export interface ExportDotOfCurrentViewDeps {
+export interface ExportD2OfCurrentViewDeps {
   sendTelemetry(commandId: string): void
   rpc: RpcClient
   preview: PreviewPanel
 }
 
-export function registerExportDotOfCurrentViewCommand({ sendTelemetry, rpc, preview }: ExportDotOfCurrentViewDeps) {
+export function registerExportD2OfCurrentViewCommand({ sendTelemetry, rpc, preview }: ExportD2OfCurrentViewDeps) {
   const { logger } = useExtensionLogger()
-  useCommand(commands.exportDotOfCurrentview, async () => {
-    sendTelemetry(commands.exportDotOfCurrentview)
+  useCommand(commands.exportD2OfCurrentview, async () => {
+    sendTelemetry(commands.exportD2OfCurrentview)
     const viewId = toValue(preview.viewId)
     const projectId = toValue(preview.projectId)
     if (!viewId || !projectId) {
       logger.warn('No preview panel found')
-      await vscode.window.showInformationMessage('Open a preview to export its DOT representation.')
+      await vscode.window.showInformationMessage('Open a preview to export its D2 source.')
       return
     }
     await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: 'Exporting DOT',
+      title: 'Exporting D2',
       cancellable: false,
     }, async () => {
-      const result = await rpc.layoutView({ viewId, projectId })
-      if (!result) {
-        await vscode.window.showWarningMessage(`Failed to export DOT for view "${viewId}".`)
+      const source = await rpc.exportD2View({ viewId, projectId })
+      if (!source) {
+        await vscode.window.showWarningMessage(`Failed to export D2 for view "${viewId}".`)
         return
       }
-      await saveTextToFile(result.dot, {
-        defaultFileName: `${viewId}.dot`,
-        extension: 'dot',
-        label: 'DOT',
+      await saveTextToFile(source, {
+        defaultFileName: `${viewId}.d2`,
+        extension: 'd2',
+        label: 'D2',
       })
     })
   })

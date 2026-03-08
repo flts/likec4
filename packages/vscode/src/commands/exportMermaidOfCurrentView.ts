@@ -5,37 +5,39 @@ import { useExtensionLogger } from '../useExtensionLogger'
 import { saveTextToFile } from './saveTextToFile'
 import type { PreviewPanel, RpcClient } from './types'
 
-export interface ExportDotOfCurrentViewDeps {
+export interface ExportMermaidOfCurrentViewDeps {
   sendTelemetry(commandId: string): void
   rpc: RpcClient
   preview: PreviewPanel
 }
 
-export function registerExportDotOfCurrentViewCommand({ sendTelemetry, rpc, preview }: ExportDotOfCurrentViewDeps) {
+export function registerExportMermaidOfCurrentViewCommand(
+  { sendTelemetry, rpc, preview }: ExportMermaidOfCurrentViewDeps,
+) {
   const { logger } = useExtensionLogger()
-  useCommand(commands.exportDotOfCurrentview, async () => {
-    sendTelemetry(commands.exportDotOfCurrentview)
+  useCommand(commands.exportMmdOfCurrentview, async () => {
+    sendTelemetry(commands.exportMmdOfCurrentview)
     const viewId = toValue(preview.viewId)
     const projectId = toValue(preview.projectId)
     if (!viewId || !projectId) {
       logger.warn('No preview panel found')
-      await vscode.window.showInformationMessage('Open a preview to export its DOT representation.')
+      await vscode.window.showInformationMessage('Open a preview to export its Mermaid source.')
       return
     }
     await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: 'Exporting DOT',
+      title: 'Exporting Mermaid',
       cancellable: false,
     }, async () => {
-      const result = await rpc.layoutView({ viewId, projectId })
-      if (!result) {
-        await vscode.window.showWarningMessage(`Failed to export DOT for view "${viewId}".`)
+      const source = await rpc.exportMmdView({ viewId, projectId })
+      if (!source) {
+        await vscode.window.showWarningMessage(`Failed to export Mermaid for view "${viewId}".`)
         return
       }
-      await saveTextToFile(result.dot, {
-        defaultFileName: `${viewId}.dot`,
-        extension: 'dot',
-        label: 'DOT',
+      await saveTextToFile(source, {
+        defaultFileName: `${viewId}.mmd`,
+        extension: 'mmd',
+        label: 'Mermaid',
       })
     })
   })

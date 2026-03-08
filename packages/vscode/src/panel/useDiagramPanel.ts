@@ -47,12 +47,6 @@ export const useDiagramPanel = createSingletonComposable(() => {
     screen: ref<'view' | 'projects'>('projects'),
     visible: ref(false),
     panelViewColumn: ref<ViewColumn | null>(null),
-    lastReady: ref<{ viewId: ViewId; projectId: ProjectId } | null>(null),
-    pendingReady: [] as Array<{
-      viewId: ViewId
-      projectId: ProjectId
-      resolve: (ok: boolean) => void
-    }>,
   }
 
   const viewId = computed(() => state.viewId.value ?? 'index' as ViewId)
@@ -188,24 +182,6 @@ export const useDiagramPanel = createSingletonComposable(() => {
       state.title.value = params.title
     })
 
-    m.onWebviewReady((params) => {
-      if (params.screen !== 'view') {
-        return
-      }
-      logger.debug`webview ready for view ${params.viewId} (project ${params.projectId})`
-      state.lastReady.value = {
-        viewId: params.viewId,
-        projectId: params.projectId,
-      }
-      if (state.pendingReady.length === 0) {
-        return
-      }
-      const pending = state.pendingReady.splice(0)
-      for (const entry of pending) {
-        entry.resolve(entry.viewId === params.viewId && entry.projectId === params.projectId)
-      }
-    })
-
     useViewTitle(panel, panelTitle)
 
     m.onWebviewCloseMe(() => {
@@ -310,28 +286,14 @@ export const useDiagramPanel = createSingletonComposable(() => {
         deployment: null,
       }
     },
-    waitForReady: async ({ viewId, projectId, timeoutMs = 10_000 }: {
-      viewId: ViewId
-      projectId: ProjectId
-      timeoutMs?: number
-    }) => {
-      const lastReady = state.lastReady.value
-      if (lastReady && lastReady.viewId === viewId && lastReady.projectId === projectId) {
-        return true
-      }
-      return await new Promise<boolean>((resolve) => {
-        state.pendingReady.push({ viewId, projectId, resolve })
-        setTimeout(() => resolve(false), timeoutMs)
-      })
-    },
-    exportPng: async (params?: { pixelRatio?: number; maxWidth?: number; maxHeight?: number }) => {
+    exportPng: async (params: { pixelRatio: number; maxWidth: number; maxHeight: number }) => {
       if (state.participant) {
         return await useMessenger().requestExportPng(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
-          pixelRatio: params?.pixelRatio,
-          maxWidth: params?.maxWidth,
-          maxHeight: params?.maxHeight,
+          pixelRatio: params.pixelRatio,
+          maxWidth: params.maxWidth,
+          maxHeight: params.maxHeight,
         })
       }
       return {
@@ -340,13 +302,13 @@ export const useDiagramPanel = createSingletonComposable(() => {
         error: 'No preview panel found',
       }
     },
-    exportSvg: async (params?: { maxWidth?: number; maxHeight?: number }) => {
+    exportSvg: async (params: { maxWidth: number; maxHeight: number }) => {
       if (state.participant) {
         return await useMessenger().requestExportSvg(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
-          maxWidth: params?.maxWidth,
-          maxHeight: params?.maxHeight,
+          maxWidth: params.maxWidth,
+          maxHeight: params.maxHeight,
         })
       }
       return {

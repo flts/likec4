@@ -92,10 +92,6 @@ export const OnOpenView: NotificationType<OpenViewPayload> = {
   method: 'on-open-view',
 }
 
-export const WebviewReady: NotificationType<OpenViewPayload> = {
-  method: 'webview-ready',
-}
-
 export type GetLastClickedNodeResult = {
   element: Fqn | null
   deployment: DeploymentFqn | null

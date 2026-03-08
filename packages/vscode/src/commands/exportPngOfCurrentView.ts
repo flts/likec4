@@ -9,10 +9,7 @@ export interface ExportPngOfCurrentViewDeps {
   preview: PreviewPanel
 }
 
-export function registerExportPngOfCurrentViewCommand({
-  sendTelemetry,
-  preview,
-}: ExportPngOfCurrentViewDeps) {
+export function registerExportPngOfCurrentViewCommand({ sendTelemetry, preview }: ExportPngOfCurrentViewDeps) {
   const { logger } = useExtensionLogger()
   useCommand(commands.exportPngOfCurrentview, async () => {
     sendTelemetry(commands.exportPngOfCurrentview)
@@ -36,31 +33,6 @@ export function registerExportPngOfCurrentViewCommand({
       const cancelled = new Promise<never>((_, reject) => {
         token.onCancellationRequested(() => reject(new vscode.CancellationError()))
       })
-
-      const isPreviewWarm = toValue(preview.visible) &&
-        toValue(preview.viewId) === viewId &&
-        toValue(preview.projectId) === projectId
-
-      ensureNotCancelled()
-      if (!isPreviewWarm) {
-        preview.open({ viewId, projectId })
-      }
-
-      const isReady = await Promise.race([
-        preview.waitForReady({
-          viewId,
-          projectId,
-          timeoutMs: isPreviewWarm ? 1_500 : 10_000,
-        }),
-        cancelled,
-      ])
-      if (!isReady) {
-        await vscode.window.showWarningMessage(
-          'Preview is not ready for export. Try again after it finishes rendering.',
-        )
-        return
-      }
-      ensureNotCancelled()
 
       const pixelRatio = vscode.workspace
         .getConfiguration('likec4')
@@ -103,7 +75,6 @@ export function registerExportPngOfCurrentViewCommand({
       if (!uri) {
         return
       }
-      ensureNotCancelled()
       await vscode.workspace.fs.writeFile(uri, result.pngBytes)
     }).then(undefined, async (error) => {
       if (error instanceof vscode.CancellationError) {

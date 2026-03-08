@@ -26,7 +26,6 @@ import {
   ReadLocalIcon,
   ViewChangeReq,
   WebviewMsgs,
-  WebviewReady,
 } from '../protocol'
 
 export type VscodeState = {
@@ -63,9 +62,6 @@ export const ExtensionApi = {
   },
   updateTitle: (title: string) => {
     messenger.sendNotification(WebviewMsgs.UpdateMyTitle, HOST_EXTENSION, { title })
-  },
-  notifyReady: (payload: { screen: 'view'; viewId: ViewId; projectId: ProjectId }) => {
-    messenger.sendNotification(WebviewReady, HOST_EXTENSION, payload)
   },
 
   change: async (params: {
@@ -175,6 +171,15 @@ type ExportViewportPayload = {
 let exportViewportProvider: null | (() => Promise<ExportViewportPayload>) = null
 let clearExportViewport: null | (() => void) = null
 
+const exportFrameBudgetMs = 16
+
+async function yieldToBrowser() {
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+  if (typeof requestIdleCallback === 'function') {
+    await new Promise<void>(resolve => requestIdleCallback(() => resolve(), { timeout: exportFrameBudgetMs }))
+  }
+}
+
 function applySvgMaxDimensions(
   svgText: string,
   sourceWidth: number,
@@ -235,6 +240,9 @@ ExtensionApi.onExportPngRequest(async (params) => {
       error: 'Diagram viewport not found',
     }
   }
+
+  // await yieldToBrowser()
+
   const rect = diagramViewport.getBoundingClientRect()
   if (rect.width <= 0 || rect.height <= 0) {
     console.warn('[likec4-preview] export-png: diagram has zero size', rect)
@@ -246,6 +254,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
     }
   }
   try {
+    // await yieldToBrowser()
     const width = Math.ceil(rect.width)
     const height = Math.ceil(rect.height)
     const ratioByWidth = Number.isFinite(maxWidth) ? maxWidth / Math.max(1, width) : Number.POSITIVE_INFINITY
@@ -260,6 +269,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
       height,
       pixelRatio: effectivePixelRatio,
     }
+    // await yieldToBrowser()
     // use toBlob directly to avoid expensive data URL roundtrip
     console.time('toBlob (PNG)')
     const blob = await toBlob(diagramViewport, options)
@@ -313,6 +323,9 @@ ExtensionApi.onExportSvgRequest(async (params) => {
       error: 'Diagram viewport not found',
     }
   }
+
+  await yieldToBrowser()
+
   const rect = diagramViewport.getBoundingClientRect()
   if (rect.width <= 0 || rect.height <= 0) {
     console.warn('[likec4-preview] export-svg: diagram has zero size', rect)
@@ -324,6 +337,7 @@ ExtensionApi.onExportSvgRequest(async (params) => {
     }
   }
   try {
+    await yieldToBrowser()
     const width = Math.ceil(rect.width)
     const height = Math.ceil(rect.height)
 
@@ -335,6 +349,7 @@ ExtensionApi.onExportSvgRequest(async (params) => {
       height,
       pixelRatio: 1,
     }
+    await yieldToBrowser()
     console.time('toSvg')
     const dataUrl = await toSvg(diagramViewport, options)
     console.timeEnd('toSvg')

@@ -60,7 +60,6 @@ function DynamicViewVariantTracker({
     onSync(variant)
 
     if (lastLoggedVariantRef.current !== variant) {
-      console.log('[likec4-preview] dynamic view variant changed', variant)
       lastLoggedVariantRef.current = variant
     }
   }, [onSync, variant])
@@ -182,12 +181,9 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
   const onExportDiagramReady = useCallback(() => {
     const root = exportViewportRef.current
     if (!root || !bounds) {
-      console.error('exportViewportRef.current is null')
       resolveExportViewport({ element: null, exportViewKind: null })
       return
     }
-
-    console.log('[likec4-preview] export view ready', view.id, projectId)
 
     const x = Math.round(-bounds.x + EXPORT_PADDING)
     const y = Math.round(-bounds.y + EXPORT_PADDING)
@@ -290,15 +286,9 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
             })
           }}
           onInitialized={() => {
-            console.log('[likec4-preview] view initialized', view.id, projectId)
             extensionApi.locate({
               projectId,
               view: view.id,
-            })
-            extensionApi.notifyReady({
-              screen: 'view',
-              viewId: view.id,
-              projectId,
             })
           }}
           onLogoClick={openProjectsScreen}

@@ -12,7 +12,6 @@ import {
   ReadLocalIcon,
   ViewChangeReq,
   WebviewMsgs,
-  WebviewReady,
 } from '@likec4/vscode-preview/protocol'
 import {
   createSingletonComposable,
@@ -116,7 +115,6 @@ export const useMessenger = createSingletonComposable(() => {
     onWebviewNavigateTo: notificationHandler(WebviewMsgs.NavigateTo),
     onWebviewOpenExternalUrl: notificationHandler(WebviewMsgs.OpenExternalUrl),
     onWebviewUpdateMyTitle: notificationHandler(WebviewMsgs.UpdateMyTitle),
-    onWebviewReady: notificationHandler(WebviewReady),
 
     sendOpenView: sendNotification(OnOpenView),
     sendModelUpdate: sendNotification(BroadcastModelUpdate),
