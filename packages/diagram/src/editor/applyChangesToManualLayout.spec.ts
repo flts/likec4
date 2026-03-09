@@ -340,4 +340,20 @@ describe('applyChangesToManualLayout', () => {
     expect(result.edges).not.toContain(latestEdges['new.node:customer'])
     expect(result.edges).not.toContain(latestEdges['customer:new.node'])
   })
+
+  it('should preserve edge label position from manual layout', ({ expect }) => {
+    const { resultEdges, manualEdges } = testData({
+      edges: {
+        edge1: d => {
+          if (d.labelBBox) {
+            d.labelBBox.x += 120
+            d.labelBBox.y += 90
+          }
+        },
+      },
+    })
+
+    expect(resultEdges.edge1.labelBBox?.x).toBe(manualEdges.edge1.labelBBox?.x)
+    expect(resultEdges.edge1.labelBBox?.y).toBe(manualEdges.edge1.labelBBox?.y)
+  })
 })

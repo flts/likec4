@@ -38,11 +38,15 @@ const getEdgeCenter = (path: SVGPathElement) => {
 
 export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props) => {
   const [isControlPointDragging, setIsControlPointDragging] = useState(false)
+  const [isLabelDragging, setIsLabelDragging] = useState(false)
 
   const isControlPointDraggingRef = useRef(isControlPointDragging)
   isControlPointDraggingRef.current = isControlPointDragging
+  const isLabelDraggingRef = useRef(isLabelDragging)
+  isLabelDraggingRef.current = isLabelDragging
 
   const xyflow = useXYFlow()
+  const xyflowStore = useXYStoreApi()
   const diagram = useDiagram()
   const {
     enableNavigateTo,
@@ -83,7 +87,7 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
   }, isSamePoint)
 
   useUpdateEffect(() => {
-    if (isControlPointDraggingRef.current) {
+    if (isControlPointDraggingRef.current || isLabelDraggingRef.current) {
       return
     }
     setLabelPos({
@@ -138,6 +142,80 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
     setControlPoints(points)
     requestAnimationFrame(() => {
       updateEdgeData(points)
+    })
+  })
+
+  const onLabelPointerDown = useCallbackRef((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0 || !labelBBox) {
+      return
+    }
+    const { domNode } = xyflowStore.getState()
+    if (!domNode) {
+      return
+    }
+    stopAndPrevent(e)
+    diagram.startEditing('edge')
+    setIsLabelDragging(true)
+
+    let hasMoved = false
+    let rafId: number | null = null
+    const initialClient = { x: e.clientX, y: e.clientY }
+    const initialFlow = xyflow.screenToFlowPosition(initialClient, { snapToGrid: false })
+    const initialLabel = { x: labelPos.x, y: labelPos.y }
+    const currentLabel = { ...initialLabel }
+    const clientPoint = { ...initialClient }
+
+    const onPointerMove = (e: PointerEvent) => {
+      clientPoint.x = e.clientX
+      clientPoint.y = e.clientY
+      if (!hasMoved && !isSamePoint(initialClient, clientPoint)) {
+        hasMoved = true
+      }
+      rafId ??= requestAnimationFrame(() => {
+        rafId = null
+        const point = xyflow.screenToFlowPosition(clientPoint, { snapToGrid: false })
+        const x = Math.trunc(initialLabel.x + point.x - initialFlow.x)
+        const y = Math.trunc(initialLabel.y + point.y - initialFlow.y)
+        currentLabel.x = x
+        currentLabel.y = y
+        setLabelPos({ x, y })
+      })
+      e.stopPropagation()
+    }
+    const onPointerUp = (e: PointerEvent) => {
+      e.stopPropagation()
+      domNode.removeEventListener('pointermove', onPointerMove, {
+        capture: true,
+      })
+      domNode.removeEventListener('click', stopAndPrevent, {
+        capture: true,
+      })
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+      if (hasMoved) {
+        diagram.updateEdgeData(id as EdgeId, {
+          labelBBox: {
+            ...labelBBox,
+            x: currentLabel.x,
+            y: currentLabel.y,
+          },
+        })
+      }
+      diagram.stopEditing(hasMoved)
+      setIsLabelDragging(false)
+    }
+
+    domNode.addEventListener('pointermove', onPointerMove, {
+      capture: true,
+    })
+    domNode.addEventListener('pointerup', onPointerUp, {
+      once: true,
+      capture: true,
+    })
+    domNode.addEventListener('click', stopAndPrevent, {
+      capture: true,
+      once: true,
     })
   })
 
@@ -206,7 +284,10 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
         {labelBBox && (
           <EdgeLabelContainer
             edgeProps={props}
-            labelPosition={isControlPointDragging ? labelPos : { x: labelX, y: labelY }}
+            labelPosition={isControlPointDragging || isLabelDragging ? labelPos : { x: labelX, y: labelY }}
+            {...enabledEditing && {
+              onPointerDown: onLabelPointerDown,
+            }}
           >
             <EdgeLabel
               pointerEvents={enabledEditing ? 'none' : 'all'}
