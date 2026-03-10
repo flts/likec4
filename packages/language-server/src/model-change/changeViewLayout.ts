@@ -35,6 +35,10 @@ export function changeViewLayout(_services: LikeC4Services, {
     }
   }
 
+  if (layout.edgeStyle != null && layout.edgeStyle !== 'default') {
+    newRule += ` with ${layout.edgeStyle}`
+  }
+
   if (existingRule && existingRule.$cstNode) {
     return TextEdit.replace(existingRule.$cstNode.range, newRule)
   }

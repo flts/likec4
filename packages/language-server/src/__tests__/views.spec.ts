@@ -292,6 +292,30 @@ describe('views', () => {
         autoLayout LeftRight 200 100
         include *
       }
+      view {
+        autoLayout TopBottom with ortho
+        include *
+      }
+      view {
+        autoLayout LeftRight 200 100 with curved
+        include *
+      }
+      view {
+        autoLayout TopBottom with polyline
+        include *
+      }
+      view {
+        autoLayout TopBottom with line
+        include *
+      }
+      view {
+        autoLayout TopBottom with none
+        include *
+      }
+      view {
+        autoLayout TopBottom with default
+        include *
+      }
     }`
 
   test('view folders').valid`${model}

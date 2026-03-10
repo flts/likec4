@@ -366,6 +366,9 @@ ViewStringProperty:
 ViewLayoutDirection returns string:
   'TopBottom' | 'LeftRight' | 'BottomTop' | 'RightLeft';
 
+ViewLayoutEdgeStyle returns string:
+  'default' | 'ortho' | 'curved' | 'polyline' | 'line' | 'none';
+
 ViewRule:
   ViewRulePredicate |
   ViewRuleGlobalPredicateRef |
@@ -486,6 +489,8 @@ ViewRuleAutoLayout:
   'autoLayout' direction=ViewLayoutDirection (
     rankSep=Number (
       nodeSep=Number)?
+    )? (
+    'with' edgeStyle=ViewLayoutEdgeStyle
     )?;
 
 NotationProperty:

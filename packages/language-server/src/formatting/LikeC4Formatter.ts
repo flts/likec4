@@ -404,6 +404,7 @@ export class LikeC4Formatter extends AbstractFormatter {
       f.keyword('autoLayout').append(FormattingOptions.oneSpace)
       f.property('rankSep').prepend(FormattingOptions.oneSpace)
       f.property('nodeSep').prepend(FormattingOptions.oneSpace)
+      f.keyword('with').prepend(FormattingOptions.oneSpace).append(FormattingOptions.oneSpace)
     })
   }
 

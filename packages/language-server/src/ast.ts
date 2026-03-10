@@ -381,6 +381,7 @@ export function toAutoLayout(
 ): c4.ViewRuleAutoLayout {
   const rankSep = rule.rankSep
   const nodeSep = rule.nodeSep
+  const edgeStyle = rule.edgeStyle as c4.AutoLayoutEdgeStyle | undefined
 
   let direction: c4.ViewRuleAutoLayout['direction']
   switch (rule.direction) {
@@ -408,6 +409,7 @@ export function toAutoLayout(
     direction,
     ...(nodeSep && { nodeSep }),
     ...(rankSep && { rankSep }),
+    ...(edgeStyle && { edgeStyle }),
   }
 }
 
