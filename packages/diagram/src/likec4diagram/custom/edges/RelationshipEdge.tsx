@@ -86,6 +86,8 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
     x: labelXY?.x ?? labelX,
     y: labelXY?.y ?? labelY,
   }, isSamePoint)
+  const labelPosRef = useRef(labelPos)
+  labelPosRef.current = labelPos
 
   useUpdateEffect(() => {
     if (isControlPointDraggingRef.current || isLabelDraggingRef.current) {
@@ -104,12 +106,14 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
     if (!path || !isControlPointDragging) return
     const edgeCenter = getEdgeCenter(path)
     const labelOffsetFromCenter = labelOffsetFromCenterRef.current
-    setLabelPos(labelOffsetFromCenter
-      ? {
-        x: edgeCenter.x + labelOffsetFromCenter.x,
-        y: edgeCenter.y + labelOffsetFromCenter.y,
-      }
-      : edgeCenter)
+    setLabelPos(
+      labelOffsetFromCenter
+        ? {
+          x: edgeCenter.x + labelOffsetFromCenter.x,
+          y: edgeCenter.y + labelOffsetFromCenter.y,
+        }
+        : edgeCenter,
+    )
   }, [edgePath, isControlPointDragging])
 
   const updateEdgeData = useCallbackRef((controlPoints: XYPosition[]) => {
@@ -174,23 +178,43 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
     })
   })
 
-  const onLabelPointerDown = useCallbackRef((e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse' || e.button !== 0 || !labelBBox) {
+  /**
+   * Handle pointer down event on the edge to add new control points
+   */
+  const onEdgePointerDown = useCallbackRef((e: ReactPointerEvent<SVGElement>) => {
+    if (e.pointerType !== 'mouse') {
       return
     }
-    const { domNode } = xyflowStore.getState()
-    if (!domNode) {
+    // Only respond to right-click or when edge is selected
+    if (e.button !== 2 && !selected) {
       return
     }
-    stopAndPrevent(e)
-    diagram.startEditing('edge')
-    setIsLabelDragging(true)
+    e.stopPropagation()
+    e.preventDefault()
 
+    diagram.startEditing('edge')
+    const newControlPoints = insertControlPoint(
+      xyflow.screenToFlowPosition(
+        {
+          x: e.clientX,
+          y: e.clientY,
+        },
+        { snapToGrid: false },
+      ),
+    )
+    diagram.updateEdgeData(id as EdgeId, { controlPoints: newControlPoints })
+    diagram.stopEditing(true)
+  })
+
+  /**
+   * Handle pointer down event on the edge label to move the label
+   */
+  const onLmbLabelPointerDown = (e: ReactPointerEvent<HTMLDivElement>, domNode: HTMLDivElement) => {
     let hasMoved = false
     let rafId: number | null = null
     const initialClient = { x: e.clientX, y: e.clientY }
     const initialFlow = xyflow.screenToFlowPosition(initialClient, { snapToGrid: false })
-    const initialLabel = { x: labelPos.x, y: labelPos.y }
+    const initialLabel = { ...labelPosRef.current }
     const currentLabel = { ...initialLabel }
     const clientPoint = { ...initialClient }
 
@@ -246,34 +270,23 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
       capture: true,
       once: true,
     })
-  })
-
-  /**
-   * Handle pointer down event on the edge to add new control points
-   */
-  const onEdgePointerDown = useCallbackRef((e: ReactPointerEvent<SVGElement>) => {
-    if (e.pointerType !== 'mouse') {
+  }
+  const onLabelPointerDown = useCallbackRef((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || !labelBBox) {
       return
     }
-    // Only respond to right-click or when edge is selected
-    if (e.button !== 2 && !selected) {
+    const { domNode } = xyflowStore.getState()
+    if (!domNode) {
       return
     }
-    e.stopPropagation()
-    e.preventDefault()
-
-    diagram.startEditing('edge')
-    const newControlPoints = insertControlPoint(
-      xyflow.screenToFlowPosition(
-        {
-          x: e.clientX,
-          y: e.clientY,
-        },
-        { snapToGrid: false },
-      ),
-    )
-    diagram.updateEdgeData(id as EdgeId, { controlPoints: newControlPoints })
-    diagram.stopEditing(true)
+    switch (e.button) {
+      case 0:
+        stopAndPrevent(e)
+        diagram.startEditing('edge')
+        setIsLabelDragging(true)
+        onLmbLabelPointerDown(e, domNode)
+        break
+    }
   })
 
   // Force hovered state when dragging control point
