@@ -39,7 +39,7 @@ const getEdgeCenter = (path: SVGPathElement) => {
 export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props) => {
   const [isControlPointDragging, setIsControlPointDragging] = useState(false)
   const [isLabelDragging, setIsLabelDragging] = useState(false)
-  const preserveLabelPositionRef = useRef(false)
+  const labelOffsetFromCenterRef = useRef<XYPosition | null>(null)
 
   const isControlPointDraggingRef = useRef(isControlPointDragging)
   isControlPointDraggingRef.current = isControlPointDragging
@@ -102,15 +102,29 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
   useRafEffect(() => {
     const path = svgPathRef.current
     if (!path || !isControlPointDragging) return
-    if (preserveLabelPositionRef.current) {
-      return
-    }
-    setLabelPos(getEdgeCenter(path))
+    const edgeCenter = getEdgeCenter(path)
+    const labelOffsetFromCenter = labelOffsetFromCenterRef.current
+    setLabelPos(labelOffsetFromCenter
+      ? {
+        x: edgeCenter.x + labelOffsetFromCenter.x,
+        y: edgeCenter.y + labelOffsetFromCenter.y,
+      }
+      : edgeCenter)
   }, [edgePath, isControlPointDragging])
 
   const updateEdgeData = useCallbackRef((controlPoints: XYPosition[]) => {
-    const point = !preserveLabelPositionRef.current && labelBBox && svgPathRef.current
-      ? getEdgeCenter(svgPathRef.current)
+    const path = svgPathRef.current
+    const point = labelBBox && path
+      ? (() => {
+        const edgeCenter = getEdgeCenter(path)
+        const labelOffsetFromCenter = labelOffsetFromCenterRef.current
+        return labelOffsetFromCenter
+          ? {
+            x: edgeCenter.x + labelOffsetFromCenter.x,
+            y: edgeCenter.y + labelOffsetFromCenter.y,
+          }
+          : edgeCenter
+      })()
       : null
     if (point) {
       diagram.updateEdgeData(id as EdgeId, {
@@ -123,19 +137,24 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
     } else {
       diagram.updateEdgeData(id as EdgeId, { controlPoints })
     }
-    preserveLabelPositionRef.current = false
+    labelOffsetFromCenterRef.current = null
     diagram.stopEditing(true)
     setIsControlPointDragging(false)
   })
 
   const onControlPointerStartMove = useCallbackRef(() => {
     const edgeCenter = svgPathRef.current ? getEdgeCenter(svgPathRef.current) : null
-    preserveLabelPositionRef.current = !!(edgeCenter && labelBBox && !isSamePoint(edgeCenter, labelBBox))
+    labelOffsetFromCenterRef.current = edgeCenter
+      ? {
+        x: Math.trunc(labelPos.x - edgeCenter.x),
+        y: Math.trunc(labelPos.y - edgeCenter.y),
+      }
+      : null
     diagram.startEditing('edge')
     setIsControlPointDragging(true)
   })
   const onControlPointerCancelMove = useCallbackRef(() => {
-    preserveLabelPositionRef.current = false
+    labelOffsetFromCenterRef.current = null
     diagram.stopEditing()
     setIsControlPointDragging(false)
   })
