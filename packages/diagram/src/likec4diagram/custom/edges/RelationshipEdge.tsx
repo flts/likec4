@@ -290,7 +290,7 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
             }}
           >
             <EdgeLabel
-              pointerEvents={enabledEditing ? 'none' : 'all'}
+              pointerEvents={'all'}
               edgeProps={props}>
               {navigateTo && (
                 <EdgeActionButton
