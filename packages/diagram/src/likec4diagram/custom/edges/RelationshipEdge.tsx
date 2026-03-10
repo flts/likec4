@@ -39,6 +39,7 @@ const getEdgeCenter = (path: SVGPathElement) => {
 export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props) => {
   const [isControlPointDragging, setIsControlPointDragging] = useState(false)
   const [isLabelDragging, setIsLabelDragging] = useState(false)
+  const preserveLabelPositionRef = useRef(false)
 
   const isControlPointDraggingRef = useRef(isControlPointDragging)
   isControlPointDraggingRef.current = isControlPointDragging
@@ -101,11 +102,16 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
   useRafEffect(() => {
     const path = svgPathRef.current
     if (!path || !isControlPointDragging) return
+    if (preserveLabelPositionRef.current) {
+      return
+    }
     setLabelPos(getEdgeCenter(path))
   }, [edgePath, isControlPointDragging])
 
   const updateEdgeData = useCallbackRef((controlPoints: XYPosition[]) => {
-    const point = labelBBox && svgPathRef.current ? getEdgeCenter(svgPathRef.current) : null
+    const point = !preserveLabelPositionRef.current && labelBBox && svgPathRef.current
+      ? getEdgeCenter(svgPathRef.current)
+      : null
     if (point) {
       diagram.updateEdgeData(id as EdgeId, {
         controlPoints,
@@ -117,15 +123,19 @@ export const RelationshipEdge = memoEdge<Types.EdgeProps<'relationship'>>((props
     } else {
       diagram.updateEdgeData(id as EdgeId, { controlPoints })
     }
+    preserveLabelPositionRef.current = false
     diagram.stopEditing(true)
     setIsControlPointDragging(false)
   })
 
   const onControlPointerStartMove = useCallbackRef(() => {
+    const edgeCenter = svgPathRef.current ? getEdgeCenter(svgPathRef.current) : null
+    preserveLabelPositionRef.current = !!(edgeCenter && labelBBox && !isSamePoint(edgeCenter, labelBBox))
     diagram.startEditing('edge')
     setIsControlPointDragging(true)
   })
   const onControlPointerCancelMove = useCallbackRef(() => {
+    preserveLabelPositionRef.current = false
     diagram.stopEditing()
     setIsControlPointDragging(false)
   })
