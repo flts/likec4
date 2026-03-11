@@ -3,7 +3,12 @@ import { vector } from '@likec4/core/geometry'
 import { nonNullable } from '@likec4/core/utils'
 import type { XYPosition } from '@xyflow/react'
 import { getNodeDimensions } from '@xyflow/system'
-import { curveCatmullRomOpen, line as d3line } from 'd3-shape'
+import {
+  curveCatmullRomOpen,
+  curveLinear,
+  curveStep,
+  line as d3line,
+} from 'd3-shape'
 import { shallowEqual } from 'fast-equals'
 import { useCallback } from 'react'
 import { first, isTruthy, last } from 'remeda'
@@ -14,8 +19,18 @@ import {
 } from '../../../utils/xyflow'
 import type { Types } from '../../types'
 
-const curve = d3line<XYPosition>()
+const catmullRomCurve = d3line<XYPosition>()
   .curve(curveCatmullRomOpen.alpha(0.7))
+  .x(d => Math.trunc(d.x))
+  .y(d => Math.trunc(d.y))
+
+const linearCurve = d3line<XYPosition>()
+  .curve(curveLinear)
+  .x(d => Math.trunc(d.x))
+  .y(d => Math.trunc(d.y))
+
+const stepCurve = d3line<XYPosition>()
+  .curve(curveStep)
   .x(d => Math.trunc(d.x))
   .y(d => Math.trunc(d.y))
 
@@ -104,5 +119,14 @@ export function useRelationshipEdgePath({
       targetCenterPos,
     ]
 
-  return nonNullable(curve(points))
+  switch (data.edgeStyle) {
+    case 'ortho':
+      return nonNullable(stepCurve(points))
+    case 'polyline':
+    case 'line':
+      return nonNullable(linearCurve(points))
+    default:
+      // 'spline', 'curved', null, undefined → smooth catmullrom
+      return nonNullable(catmullRomCurve(points))
+  }
 }
