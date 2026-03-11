@@ -73,22 +73,20 @@ export function isAutoLayoutDirection(autoLayout: unknown): autoLayout is AutoLa
  * Controls the style of edges in auto-layout mode.
  * Maps to graphviz `splines` attribute.
  *
- * - `default` - curved lines that avoid nodes (graphviz `spline`)
- * - `ortho`   - orthogonal (right-angle) lines
- * - `curved`  - curved lines (may overlap nodes)
- * - `polyline`- straight line segments that avoid nodes
- * - `line`    - straight lines
- * - `none`    - no edge lines are drawn
+ * - `spline`   - Bezier curved lines that avoid nodes (graphviz `spline`, default)
+ * - `ortho`    - orthogonal (right-angle) lines
+ * - `curved`   - curved lines (may overlap nodes)
+ * - `polyline` - straight line segments that avoid nodes
+ * - `line`     - straight lines
  */
-export type AutoLayoutEdgeStyle = 'default' | 'ortho' | 'curved' | 'polyline' | 'line' | 'none'
+export type AutoLayoutEdgeStyle = 'spline' | 'ortho' | 'curved' | 'polyline' | 'line'
 export function isAutoLayoutEdgeStyle(value: unknown): value is AutoLayoutEdgeStyle {
   return (
-    value === 'default'
+    value === 'spline'
     || value === 'ortho'
     || value === 'curved'
     || value === 'polyline'
     || value === 'line'
-    || value === 'none'
   )
 }
 

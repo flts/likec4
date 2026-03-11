@@ -60,6 +60,15 @@ describe('ElementViewPrinter', () => {
     expect(diagram).toContain('splines = "spline"')
   })
 
+  it('uses spline splines when edgeStyle is spline', ({ expect }) => {
+    const view = {
+      ...computedIndexView,
+      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'spline' as const },
+    } as ComputedElementView
+    const diagram = print(view)
+    expect(diagram).toContain('splines = "spline"')
+  })
+
   it('uses ortho splines when edgeStyle is ortho', ({ expect }) => {
     const view = {
       ...computedIndexView,
@@ -94,23 +103,5 @@ describe('ElementViewPrinter', () => {
     } as ComputedElementView
     const diagram = print(view)
     expect(diagram).toContain('splines = "line"')
-  })
-
-  it('uses none splines when edgeStyle is none', ({ expect }) => {
-    const view = {
-      ...computedIndexView,
-      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'none' as const },
-    } as ComputedElementView
-    const diagram = print(view)
-    expect(diagram).toContain('splines = "none"')
-  })
-
-  it('uses default splines when edgeStyle is explicitly default', ({ expect }) => {
-    const view = {
-      ...computedIndexView,
-      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'default' as const },
-    } as ComputedElementView
-    const diagram = print(view)
-    expect(diagram).toContain('splines = "spline"')
   })
 })

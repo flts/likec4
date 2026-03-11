@@ -278,9 +278,8 @@ export abstract class DotPrinter<V extends Pick<ComputedView, 'id' | 'nodes' | '
 
   protected createGraph(): RootGraphModel {
     const autoLayout = this.view.autoLayout
-    // Map AutoLayoutEdgeStyle to graphviz splines attribute value
-    // 'default' and undefined both map to graphviz 'spline'
-    const splines = autoLayout.edgeStyle === 'default' || !autoLayout.edgeStyle ? 'spline' : autoLayout.edgeStyle
+    // Map AutoLayoutEdgeStyle to graphviz splines attribute value; undefined maps to 'spline'
+    const splines = autoLayout.edgeStyle ?? 'spline'
     const G = digraph({
       [_.likec4_viewId]: this.view.id,
       [_.bgcolor]: 'transparent',

@@ -43,7 +43,7 @@ export function changeViewLayout(_services: LikeC4Services, {
   invariant(insertPos, 'Closing brace not found')
 
   let insert = `\t${newAutoLayoutRule}`
-  if (layout.edgeStyle != null && layout.edgeStyle !== 'default') {
+  if (layout.edgeStyle != null && layout.edgeStyle !== 'spline') {
     insert += `\n\tedgeStyle ${layout.edgeStyle}`
   }
   insert += '\n\t'

@@ -367,7 +367,7 @@ ViewLayoutDirection returns string:
   'TopBottom' | 'LeftRight' | 'BottomTop' | 'RightLeft';
 
 ViewLayoutEdgeStyle returns string:
-  'default' | 'ortho' | 'curved' | 'polyline' | 'line' | 'none';
+  'spline' | 'ortho' | 'curved' | 'polyline' | 'line';
 
 ViewRule:
   ViewRulePredicate |

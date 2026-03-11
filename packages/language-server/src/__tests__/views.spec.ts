@@ -315,11 +315,7 @@ describe('views', () => {
         include *
       }
       view {
-        edgeStyle none
-        include *
-      }
-      view {
-        edgeStyle default
+        edgeStyle spline
         include *
       }
     }`
