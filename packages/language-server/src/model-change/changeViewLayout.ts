@@ -26,26 +26,27 @@ export function changeViewLayout(_services: LikeC4Services, {
   const newdirection = toAstViewLayoutDirection(layout.direction)
   const existingRule = findLast(viewAst.body.rules, ast.isViewRuleAutoLayout) as ast.ViewRuleAutoLayout | undefined
 
-  let newRule = `autoLayout ${newdirection}`
+  let newAutoLayoutRule = `autoLayout ${newdirection}`
 
   if (isNumber(layout.rankSep)) {
-    newRule += ` ${layout.rankSep}`
+    newAutoLayoutRule += ` ${layout.rankSep}`
     if (isNumber(layout.nodeSep)) {
-      newRule += ` ${layout.nodeSep}`
+      newAutoLayoutRule += ` ${layout.nodeSep}`
     }
   }
 
-  if (layout.edgeStyle != null && layout.edgeStyle !== 'default') {
-    newRule += ` with ${layout.edgeStyle}`
-  }
-
   if (existingRule && existingRule.$cstNode) {
-    return TextEdit.replace(existingRule.$cstNode.range, newRule)
+    return TextEdit.replace(existingRule.$cstNode.range, newAutoLayoutRule)
   }
 
   const insertPos = findNodeForKeyword(viewAst.body.$cstNode, '}')?.range.start
   invariant(insertPos, 'Closing brace not found')
-  const insert = `\t${newRule}\n\t`
+
+  let insert = `\t${newAutoLayoutRule}`
+  if (layout.edgeStyle != null && layout.edgeStyle !== 'default') {
+    insert += `\n\tedgeStyle ${layout.edgeStyle}`
+  }
+  insert += '\n\t'
 
   return TextEdit.insert(insertPos, insert)
 }

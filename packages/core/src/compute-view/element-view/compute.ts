@@ -12,6 +12,7 @@ import {
   type NodeId,
   type ParsedElementView,
   isViewRuleAutoLayout,
+  isViewRuleEdgeStyle,
   isViewRuleGroup,
   isViewRulePredicate,
   isViewRuleRank,
@@ -235,6 +236,7 @@ export function computeElementView<A extends AnyAux>(
   )
 
   const autoLayoutRule = findLast(rules, isViewRuleAutoLayout)
+  const edgeStyleRule = findLast(rules, isViewRuleEdgeStyle)
 
   const nodeNotations = buildElementNotations(nodes)
   const ranks = collectRankConstraints(rules, nodes)
@@ -246,6 +248,7 @@ export function computeElementView<A extends AnyAux>(
       direction: autoLayoutRule?.direction ?? 'TB',
       ...(autoLayoutRule?.nodeSep && { nodeSep: autoLayoutRule.nodeSep }),
       ...(autoLayoutRule?.rankSep && { rankSep: autoLayoutRule.rankSep }),
+      ...(edgeStyleRule && { edgeStyle: edgeStyleRule.edgeStyle }),
     },
     edges: applyCustomRelationProperties(rules, nodes, sorted.edges),
     nodes: map(nodes, n => {

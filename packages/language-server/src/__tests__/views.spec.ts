@@ -292,28 +292,34 @@ describe('views', () => {
         autoLayout LeftRight 200 100
         include *
       }
+    }`
+
+  test('edgeStyle').valid`${model}
+    views {
       view {
-        autoLayout TopBottom with ortho
+        autoLayout TopBottom
+        edgeStyle ortho
         include *
       }
       view {
-        autoLayout LeftRight 200 100 with curved
+        autoLayout LeftRight 200 100
+        edgeStyle curved
         include *
       }
       view {
-        autoLayout TopBottom with polyline
+        edgeStyle polyline
         include *
       }
       view {
-        autoLayout TopBottom with line
+        edgeStyle line
         include *
       }
       view {
-        autoLayout TopBottom with none
+        edgeStyle none
         include *
       }
       view {
-        autoLayout TopBottom with default
+        edgeStyle default
         include *
       }
     }`

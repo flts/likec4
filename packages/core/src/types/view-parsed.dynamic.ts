@@ -10,6 +10,7 @@ import type { Color, RelationshipArrowType, RelationshipLineType } from './style
 import type {
   BaseParsedViewProperties,
   ViewRuleAutoLayout,
+  ViewRuleEdgeStyle,
   ViewRuleGlobalPredicateRef,
   ViewRuleGlobalStyle,
 } from './view-common'
@@ -94,6 +95,7 @@ export type DynamicViewRule<A extends AnyAux = AnyAux> = ExclusiveUnion<{
   ElementViewRuleStyle: ElementViewRuleStyle<A>
   GlobalStyle: ViewRuleGlobalStyle
   AutoLayout: ViewRuleAutoLayout
+  EdgeStyle: ViewRuleEdgeStyle
 }>
 
 export type DynamicViewDisplayVariant = 'diagram' | 'sequence'

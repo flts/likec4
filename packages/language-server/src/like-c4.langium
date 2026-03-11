@@ -375,6 +375,7 @@ ViewRule:
   ViewRuleGroup |
   ViewRuleStyleOrGlobalRef |
   ViewRuleAutoLayout |
+  ViewRuleEdgeStyle |
   ViewRuleRank
 ;
 
@@ -404,7 +405,8 @@ DynamicViewRule:
   DynamicViewIncludePredicate |
   DynamicViewGlobalPredicateRef |
   ViewRuleStyleOrGlobalRef |
-  ViewRuleAutoLayout
+  ViewRuleAutoLayout |
+  ViewRuleEdgeStyle
 ;
 
 DynamicViewParallelSteps:
@@ -489,9 +491,10 @@ ViewRuleAutoLayout:
   'autoLayout' direction=ViewLayoutDirection (
     rankSep=Number (
       nodeSep=Number)?
-    )? (
-    'with' edgeStyle=ViewLayoutEdgeStyle
     )?;
+
+ViewRuleEdgeStyle:
+  'edgeStyle' style=ViewLayoutEdgeStyle;
 
 NotationProperty:
   key='notation' ':'? value=MarkdownOrString ';'?
@@ -756,7 +759,8 @@ DeploymentViewBody: '{'
 DeploymentViewRule:
   DeploymentViewRulePredicate |
   DeploymentViewRuleStyle |
-  ViewRuleAutoLayout
+  ViewRuleAutoLayout |
+  ViewRuleEdgeStyle
 ;
 
 DeploymentViewRuleStyle:

@@ -762,26 +762,30 @@ describe('formating', () => {
     )
 
     it(
-      'formats autolayout property with edgeStyle',
+      'formats edgeStyle property',
       async ({ expect }) =>
         expect(
           await format`
           views {
             view {
-              autoLayout     TopBottom   with   ortho
+              autoLayout     TopBottom
+              edgeStyle   ortho
             }
             view {
-              autoLayout     LeftRight   100   50   with   curved
+              autoLayout     LeftRight   100   50
+              edgeStyle     curved
             }
           }`,
         ).toMatchInlineSnapshot(`
           "
           views {
             view {
-              autoLayout TopBottom with ortho
+              autoLayout TopBottom
+              edgeStyle ortho
             }
             view {
-              autoLayout LeftRight 100 50 with curved
+              autoLayout LeftRight 100 50
+              edgeStyle curved
             }
           }"
         `),

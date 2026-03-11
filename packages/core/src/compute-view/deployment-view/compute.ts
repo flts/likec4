@@ -7,6 +7,7 @@ import {
   _stage,
   _type,
   isViewRuleAutoLayout,
+  isViewRuleEdgeStyle,
   isViewRulePredicate,
 } from '../../types'
 import { buildElementNotations } from '../utils/buildElementNotations'
@@ -66,6 +67,7 @@ export function computeDeploymentView<M extends AnyAux>(
   )
 
   const autoLayoutRule = findLast(rules, isViewRuleAutoLayout)
+  const edgeStyleRule = findLast(rules, isViewRuleEdgeStyle)
 
   const elementNotations = buildElementNotations(nodes)
 
@@ -77,6 +79,7 @@ export function computeDeploymentView<M extends AnyAux>(
       direction: autoLayoutRule?.direction ?? 'TB',
       ...(autoLayoutRule?.nodeSep && { nodeSep: autoLayoutRule.nodeSep }),
       ...(autoLayoutRule?.rankSep && { rankSep: autoLayoutRule.rankSep }),
+      ...(edgeStyleRule && { edgeStyle: edgeStyleRule.edgeStyle }),
     },
     edges: sorted.edges,
     nodes: map(nodes, n => {

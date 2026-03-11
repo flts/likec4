@@ -96,11 +96,18 @@ export interface ViewRuleAutoLayout {
   direction: AutoLayoutDirection
   nodeSep?: number
   rankSep?: number
-  edgeStyle?: AutoLayoutEdgeStyle
 }
 
 export function isViewRuleAutoLayout(rule: object): rule is ViewRuleAutoLayout {
   return 'direction' in rule
+}
+
+export interface ViewRuleEdgeStyle {
+  edgeStyle: AutoLayoutEdgeStyle
+}
+
+export function isViewRuleEdgeStyle(rule: object): rule is ViewRuleEdgeStyle {
+  return 'edgeStyle' in rule && !('direction' in rule)
 }
 
 export interface ViewAutoLayout {
