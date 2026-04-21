@@ -6,15 +6,16 @@
  * @param forElement Optional root element to also collect inline styles from.
  */
 export function collectEmbeddedStyles(forElement?: HTMLElement): string {
-  const sheets: string[] = []
+  const sheets = new Set<string>()
 
   // Collect from document stylesheets
   for (const sheet of document.styleSheets) {
     try {
       const rules = Array.from(sheet.cssRules)
       const sheetText = rules.map(r => r.cssText).join('\n')
-      if (sheetText.trim()) {
-        sheets.push(sheetText)
+      const normalizedText = sheetText.trim()
+      if (normalizedText) {
+        sheets.add(normalizedText)
       }
     } catch {
       // Cross-origin stylesheet — skip silently
@@ -26,12 +27,12 @@ export function collectEmbeddedStyles(forElement?: HTMLElement): string {
     for (const style of forElement.querySelectorAll('style')) {
       const text = style.textContent?.trim()
       if (text) {
-        sheets.push(text)
+        sheets.add(text)
       }
     }
   }
 
-  return sheets.join('\n')
+  return Array.from(sheets).join('\n')
 }
 
 /**
@@ -41,22 +42,24 @@ export function collectEmbeddedStyles(forElement?: HTMLElement): string {
  */
 export function collectRootCssVariables(): string {
   const rootStyle = getComputedStyle(document.documentElement)
-  const vars: string[] = []
+  const vars = new Map<string, string>()
 
   for (const prop of rootStyle) {
     if (prop.startsWith('--')) {
       const val = rootStyle.getPropertyValue(prop).trim()
       if (val) {
-        vars.push(`  ${prop}: ${val};`)
+        vars.set(prop, val)
       }
     }
   }
 
-  if (vars.length === 0) {
+  if (vars.size === 0) {
     return ''
   }
 
-  return `:root {\n${vars.join('\n')}\n}\n`
+  const declarations = Array.from(vars, ([prop, val]) => `  ${prop}: ${val};`)
+
+  return `:root {\n${declarations.join('\n')}\n}\n`
 }
 
 /**

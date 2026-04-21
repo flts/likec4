@@ -2634,9 +2634,6 @@ importers:
       '@xyflow/system':
         specifier: catalog:xyflow
         version: 0.0.76
-      '@zumer/snapdom':
-        specifier: ^2.8.0
-        version: 2.8.0
       babel-plugin-react-compiler:
         specifier: catalog:react
         version: 1.0.0
@@ -5582,9 +5579,6 @@ packages:
 
   '@zag-js/utils@1.33.1':
     resolution: {integrity: sha512-N73enDcveuto5BdYd15m7bu08vd+Re//eufgzGyKPWuzFowEFV77si1v9zZjmK9eXVMTFyde/TPal3aHv4VEJg==}
-
-  '@zumer/snapdom@2.8.0':
-    resolution: {integrity: sha512-NhztgFDNfOkFt8Ox9PIJ1IwggyMui5UDazysOgZD7FSGL0G7H8U+J3ft0iecxAS8daj5aC62i3blaTk7s2GcpA==}
 
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
@@ -13434,8 +13428,6 @@ snapshots:
       csstype: 3.2.3
 
   '@zag-js/utils@1.33.1': {}
-
-  '@zumer/snapdom@2.8.0': {}
 
   accepts@2.0.0:
     dependencies:
