@@ -13,10 +13,10 @@ type FormatQuickPickItem = vscode.QuickPickItem & { format: ExportFormat }
 type NumberQuickPickItem = vscode.QuickPickItem & { value: number }
 
 const formatItems: Array<{ label: string; description?: string; format: ExportFormat }> = [
-  { label: 'SVG', description: 'Manual layout export', format: 'svg' },
-  { label: 'SVG (Graphviz)', description: 'Graphviz rendered SVG', format: 'svg-graphviz' },
-  { label: 'PNG', description: 'Raster image export', format: 'png' },
-  { label: 'JPEG', description: 'Raster image export', format: 'jpeg' },
+  { label: 'SVG', description: 'SVG export', format: 'svg' },
+  { label: 'SVG (Graphviz)', description: 'Graphviz rendered SVG export', format: 'svg-graphviz' },
+  { label: 'PNG', description: 'PNG image export', format: 'png' },
+  { label: 'JPEG', description: 'JPEG image export', format: 'jpeg' },
   { label: 'Mermaid', description: 'Mermaid source', format: 'mermaid' },
   { label: 'DOT', description: 'Graphviz DOT source', format: 'dot' },
   { label: 'D2', description: 'D2 source', format: 'd2' },
@@ -57,7 +57,7 @@ async function showQuickPickWithDefault<T extends vscode.QuickPickItem>(
   })
 }
 
-async function pickFormat(lastFormat: ExportFormat) {
+async function pickFormat(lastFormat?: ExportFormat) {
   const items: FormatQuickPickItem[] = formatItems.map(item => ({
     ...item,
     ...(item.format === lastFormat ? { detail: 'Previously selected' } : {}),
@@ -75,7 +75,7 @@ async function pickFormat(lastFormat: ExportFormat) {
   )
 }
 
-async function pickPngPixelRatio(currentValue: number) {
+async function pickPngPixelRatio(currentValue?: number) {
   const items: NumberQuickPickItem[] = [1, 2, 3, 4].map(value => ({
     label: String(value),
     ...(value === currentValue ? { description: 'Current setting' } : {}),
@@ -95,8 +95,9 @@ async function pickPngPixelRatio(currentValue: number) {
   return selected?.value
 }
 
-async function pickJpegQuality(currentValue: number) {
-  const hasPresetMatch = jpegQualityPresets.includes(currentValue as typeof jpegQualityPresets[number])
+async function pickJpegQuality(currentValue?: number) {
+  const hasPresetMatch = currentValue !== undefined &&
+    jpegQualityPresets.includes(currentValue as typeof jpegQualityPresets[number])
   const items: NumberQuickPickItem[] = [
     ...jpegQualityPresets.map(value => ({
       label: String(value),
@@ -131,7 +132,7 @@ async function pickJpegQuality(currentValue: number) {
   const input = await vscode.window.showInputBox({
     title: 'JPEG quality',
     prompt: 'Enter a value between 0 and 100',
-    value: String(currentValue),
+    value: currentValue !== undefined ? String(currentValue) : undefined,
     validateInput: value => {
       const parsed = Number(value)
       if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) {

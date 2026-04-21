@@ -21,21 +21,68 @@ export interface ExportCurrentViewDeps {
 }
 
 export interface ExportCurrentViewSelection {
-  format: ExportFormat
+  format?: ExportFormat
   pngPixelRatio?: number
-  jpegPixelRatio?: number
   jpegQuality?: number
+}
+
+function getExplicitConfigValue<T>(key: string): T | undefined {
+  const inspected = vscode.workspace.getConfiguration('likec4').inspect<T>(key)
+  if (!inspected) {
+    return undefined
+  }
+  return inspected.workspaceFolderValue
+    ?? inspected.workspaceValue
+    ?? inspected.globalValue
 }
 
 export function getExportConfig() {
   const config = vscode.workspace.getConfiguration('likec4')
   return {
-    pngPixelRatio: config.get<number>('export.pngPixelRatio', 3),
-    jpegPixelRatio: config.get<number>('export.jpegPixelRatio', 2),
-    jpegQuality: config.get<number>('export.jpegQuality', 92),
-    imageMaxWidth: config.get<number>('export.imageMaxWidth', 8192),
-    imageMaxHeight: config.get<number>('export.imageMaxHeight', 8192),
-    lastFormat: config.get<ExportFormat>('export.lastFormat', 'svg'),
+    pngPixelRatio: config.get<number>('export.pngPixelRatio'),
+    jpegQuality: config.get<number>('export.jpegQuality'),
+    imageMaxWidth: config.get<number>('export.imageMaxWidth'),
+    imageMaxHeight: config.get<number>('export.imageMaxHeight'),
+    lastFormat: config.get<ExportFormat>('export.lastFormat'),
+  }
+}
+
+export function getQuickExportSelection(): ExportCurrentViewSelection | null {
+  const format = getExplicitConfigValue<ExportFormat>('export.lastFormat')
+  if (!format) {
+    return null
+  }
+
+  switch (format) {
+    case 'png': {
+      const pngPixelRatio = getExplicitConfigValue<number>('export.pngPixelRatio')
+      if (pngPixelRatio === undefined) {
+        return null
+      }
+      return {
+        format,
+        pngPixelRatio,
+      }
+    }
+    case 'jpeg': {
+      const jpegQuality = getExplicitConfigValue<number>('export.jpegQuality')
+      if (jpegQuality === undefined) {
+        return null
+      }
+      return {
+        format,
+        jpegQuality,
+      }
+    }
+    case 'svg':
+    case 'svg-graphviz':
+    case 'mermaid':
+    case 'dot':
+    case 'd2':
+    case 'puml':
+      return { format }
+    default:
+      return null
   }
 }
 
@@ -194,8 +241,8 @@ export async function runExportCurrentView(
 
         const result = await Promise.race([
           deps.preview.exportSvg({
-            maxWidth: settings.imageMaxWidth,
-            maxHeight: settings.imageMaxHeight,
+            maxWidth: settings.imageMaxWidth!,
+            maxHeight: settings.imageMaxHeight!,
           }),
           cancelled,
         ])
@@ -240,9 +287,9 @@ export async function runExportCurrentView(
 
         const result = await Promise.race([
           deps.preview.exportPng({
-            pixelRatio: selection.pngPixelRatio ?? settings.pngPixelRatio,
-            maxWidth: settings.imageMaxWidth,
-            maxHeight: settings.imageMaxHeight,
+            pixelRatio: selection.pngPixelRatio ?? settings.pngPixelRatio!,
+            maxWidth: settings.imageMaxWidth!,
+            maxHeight: settings.imageMaxHeight!,
           }),
           cancelled,
         ])
@@ -286,9 +333,9 @@ export async function runExportCurrentView(
 
         const result = await Promise.race([
           deps.preview.exportJpeg({
-            maxWidth: settings.imageMaxWidth,
-            maxHeight: settings.imageMaxHeight,
-            quality: asJpegQuality(selection.jpegQuality ?? settings.jpegQuality),
+            maxWidth: settings.imageMaxWidth!,
+            maxHeight: settings.imageMaxHeight!,
+            quality: asJpegQuality(selection.jpegQuality ?? settings.jpegQuality!),
           }),
           cancelled,
         ])
