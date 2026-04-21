@@ -62,36 +62,40 @@ export async function rasterizeSvg(
   const canvasWidth = Math.max(1, Math.ceil(sourceWidth * effectivePixelRatio))
   const canvasHeight = Math.max(1, Math.ceil(sourceHeight * effectivePixelRatio))
 
-  // Create a Blob URL for the SVG
-  const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' })
-  const svgUrl = URL.createObjectURL(svgBlob)
+  const svgUrl = svgToDataUrl(svgText)
 
-  try {
-    const image = await loadImage(svgUrl)
+  const image = await loadImage(svgUrl)
 
-    const canvas = document.createElement('canvas')
-    canvas.width = canvasWidth
-    canvas.height = canvasHeight
+  const canvas = document.createElement('canvas')
+  canvas.width = canvasWidth
+  canvas.height = canvasHeight
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      return null
-    }
-
-    // For JPEG, fill the canvas with the solid theme background first
-    // (JPEG has no alpha channel, transparent areas become black without this)
-    if (format === 'jpeg') {
-      ctx.fillStyle = resolveThemeBackgroundColor()
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-    }
-
-    ctx.scale(effectivePixelRatio, effectivePixelRatio)
-    ctx.drawImage(image, 0, 0, sourceWidth, sourceHeight)
-
-    return await canvasToBlob(canvas, format, quality)
-  } finally {
-    URL.revokeObjectURL(svgUrl)
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    return null
   }
+
+  // For JPEG, fill the canvas with the solid theme background first
+  // (JPEG has no alpha channel, transparent areas become black without this)
+  if (format === 'jpeg') {
+    ctx.fillStyle = resolveThemeBackgroundColor()
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+  }
+
+  ctx.scale(effectivePixelRatio, effectivePixelRatio)
+  ctx.drawImage(image, 0, 0, sourceWidth, sourceHeight)
+
+  return await canvasToBlob(canvas, format, quality)
+}
+
+function svgToDataUrl(svgText: string): string {
+  const utf8 = new TextEncoder().encode(svgText)
+  let binary = ''
+  for (const byte of utf8) {
+    binary += String.fromCharCode(byte)
+  }
+  const encoded = btoa(binary)
+  return `data:image/svg+xml;base64,${encoded}`
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {

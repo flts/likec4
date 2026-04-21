@@ -42,7 +42,7 @@ export function registerExportJpegOfCurrentViewCommand(
       const maxHeight = vscode.workspace
         .getConfiguration('likec4')
         .get<number>('export.imageMaxHeight', 8192)
-      // Phase 8: JPEG at 2x pixel ratio is typically sufficient given compression
+      // JPEG at 2x pixel ratio is typically sufficient given compression.
       const pixelRatio = 2
 
       const result = await Promise.race([
@@ -60,7 +60,7 @@ export function registerExportJpegOfCurrentViewCommand(
       ensureNotCancelled()
 
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri
-      // Phase 8: output extension is .jpg (not .jpeg)
+      // Use `.jpg` for saved files while keeping the MIME type as `image/jpeg`.
       const filename = result.exportViewKind === 'sequence'
         ? `${viewId}.sequence.jpg`
         : result.exportViewKind === 'deployment'

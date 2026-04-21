@@ -1,6 +1,18 @@
 import { collectEmbeddedStyles, collectRootCssVariables, resolveThemeBackgroundColor } from './collectEmbeddedStyles'
 import type { ExportSceneMetadata } from './exportTypes'
 
+function escapeCdata(text: string): string {
+  // Split any embedded `]]>` so the surrounding CDATA section remains well-formed XML.
+  return text.replaceAll(']]>', ']]]]><![CDATA[>')
+}
+
+function serializeElementAsXhtml(element: HTMLElement): string {
+  const xhtmlDocument = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'div')
+  const imported = xhtmlDocument.importNode(element, true)
+  xhtmlDocument.replaceChild(imported, xhtmlDocument.documentElement)
+  return new XMLSerializer().serializeToString(imported)
+}
+
 /**
  * Serializes an HTML element as a standalone SVG document using `<foreignObject>`.
  *
@@ -24,12 +36,10 @@ export function serializeWithForeignObject(
   const embeddedStyles = collectEmbeddedStyles(element)
   const rootVars = collectRootCssVariables()
 
-  // Serialize element HTML — use XMLSerializer for a well-formed output.
-  // Fall back to outerHTML if XMLSerializer fails (e.g. very deep trees).
+  // Serialize element as XHTML so the foreignObject subtree stays valid XML.
   let elementContent: string
   try {
-    const serializer = new XMLSerializer()
-    elementContent = serializer.serializeToString(element)
+    elementContent = serializeElementAsXhtml(element)
   } catch {
     elementContent = element.outerHTML
   }
@@ -40,10 +50,13 @@ export function serializeWithForeignObject(
     ` viewBox="0 0 ${logicalWidth} ${logicalHeight}"`,
     ` preserveAspectRatio="xMidYMid meet">`,
     `<defs>`,
-    `<style>`,
-    rootVars,
-    embeddedStyles,
-    `</style>`,
+    `<style><![CDATA[`,
+    escapeCdata(rootVars),
+    escapeCdata(embeddedStyles),
+    `]]></style>`,
+    `<style><![CDATA[
+      svg, foreignObject { overflow: visible; }
+    ]]></style>`,
     `</defs>`,
   ]
 
@@ -96,6 +109,9 @@ export function applySvgMaxDimensions(
 
   const parser = new DOMParser()
   const doc = parser.parseFromString(svgText, 'image/svg+xml')
+  if (doc.getElementsByTagName('parsererror').length > 0) {
+    return svgText
+  }
   const root = doc.documentElement
 
   if (!root || root.nodeName.toLowerCase() !== 'svg') {
