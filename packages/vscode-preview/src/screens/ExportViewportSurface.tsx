@@ -241,6 +241,8 @@ export function ExportViewportSurface({
       onReady({ element: null, metadata: null })
       return
     }
+    const attributionNodes = exportElement.querySelectorAll('.react-flow__attribution')
+    attributionNodes.forEach(node => node.remove())
 
     // Apply the viewport translation so diagram content is positioned correctly
     // within the export surface.
