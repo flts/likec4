@@ -32,10 +32,10 @@ const EXPORT_IMAGE_WAIT_TIMEOUT_MS = 2000
 
 /**
  * Ready payload returned by the export surface once the scene is stable.
- * Contains the export root element and associated scene metadata.
+ * Contains the export element and associated scene metadata.
  */
 export type ExportViewportSurfaceReadyPayload = {
-  /** The export root element (has `data-export-root`), or null on failure. */
+  /** The export element (has `data-export-root`), or null on failure. */
   element: HTMLElement | null
   /** Scene metadata (Phase 13). Null when element is null. */
   metadata: ExportSceneMetadata | null
@@ -181,7 +181,7 @@ export function useExportViewportProvider({
 
 /**
  * Phase 1: Export surface component that renders a hidden, non-interactive LikeC4Diagram
- * positioned off-screen. Exposes a stable export root element marked with `data-export-root`.
+ * positioned off-screen. Exposes a stable export element marked with `data-export-root`.
  *
  * Phase 3: Readiness is hardened — we wait for `document.fonts.ready`, descendant
  * images, and two animation frames before resolving the `onReady` callback.
@@ -234,6 +234,14 @@ export function ExportViewportSurface({
       return
     }
 
+    // Export the inner diagram container, not the hidden/off-screen wrapper.
+    // The wrapper intentionally uses opacity and large negative left values.
+    const exportElement = root.querySelector<HTMLElement>('[data-export-root]')
+    if (!exportElement) {
+      onReady({ element: null, metadata: null })
+      return
+    }
+
     // Apply the viewport translation so diagram content is positioned correctly
     // within the export surface.
     const x = Math.round(-bounds.x + EXPORT_PADDING)
@@ -256,22 +264,21 @@ export function ExportViewportSurface({
 
     // Phase 3: Wait for scene readiness before resolving
     waitForExportSceneReady(root, EXPORT_IMAGE_WAIT_TIMEOUT_MS).then(
-      () => onReady({ element: root, metadata }),
-      () => onReady({ element: root, metadata }), // proceed even on error
+      () => onReady({ element: exportElement, metadata }),
+      () => onReady({ element: exportElement, metadata }), // proceed even on error
     )
   }, [bounds.x, bounds.y, logicalWidth, logicalHeight, mode, onReady])
 
   return (
-    // Phase 1: Stable export root with `data-export-root` marker
+    // Keep wrapper hidden/off-screen so it doesn't affect interactive UI.
     <div
       ref={rootRef}
       style={surfaceStyle}
-      data-export-root=""
       data-export-scene-mode={mode}
       data-testid="vscode-preview-export-surface"
     >
-      {/* Phase 1: Stable diagram container with `data-export-diagram` marker */}
-      <div data-export-diagram="" style={{ width: '100%', height: '100%' }}>
+      {/* Phase 1: Stable export root without hidden wrapper styles. */}
+      <div data-export-root="" data-export-diagram="" style={{ width: '100%', height: '100%' }}>
         <LikeC4Diagram
           key={`export-${view.id}-${dynamicVariant ?? 'none'}-${requestId}`}
           view={view}
