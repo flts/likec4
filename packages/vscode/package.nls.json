@@ -13,6 +13,7 @@
   "ext.cmd.export-png-of-currentview": "Export PNG of current view",
   "ext.cmd.export-svg-of-currentview": "Export SVG of current view",
   "ext.cmd.export-svg-graphviz-of-currentview": "Export SVG of current view (graphviz)",
+  "ext.cmd.export-jpeg-of-currentview": "Export JPEG of current view",
   "ext.cmd.migrate-manual-layouts": "Migrate manual layouts",
   "ext.cmd.validate-layout": "Validate layout",
   "ext.cmd.open-projects-overview": "Open Projects Overview"

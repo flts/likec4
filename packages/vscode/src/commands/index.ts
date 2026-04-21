@@ -4,6 +4,7 @@ import { useLanguageClient } from '../useLanguageClient'
 import { useRpc } from '../useRpc'
 import { registerExportD2OfCurrentViewCommand } from './exportD2OfCurrentView'
 import { registerExportDotOfCurrentViewCommand } from './exportDotOfCurrentView'
+import { registerExportJpegOfCurrentViewCommand } from './exportJpegOfCurrentView'
 import { registerExportMermaidOfCurrentViewCommand } from './exportMermaidOfCurrentView'
 import { registerExportPngOfCurrentViewCommand } from './exportPngOfCurrentView'
 import { registerExportPumlOfCurrentViewCommand } from './exportPumlOfCurrentView'
@@ -49,6 +50,7 @@ export function registerCommands() {
   registerExportSvgGraphvizOfCurrentViewCommand(deps)
   registerExportPngOfCurrentViewCommand(deps)
   registerExportSvgOfCurrentViewCommand(deps)
+  registerExportJpegOfCurrentViewCommand(deps)
   registerValidateLayoutCommand(deps)
   registerReloadProjectsCommand(deps)
 }

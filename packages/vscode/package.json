@@ -261,6 +261,10 @@
           "when": "likec4.activated"
         },
         {
+          "command": "likec4.export-jpeg-of-currentview",
+          "when": "likec4.activated"
+        },
+        {
           "command": "likec4.reload-projects",
           "when": "likec4.activated"
         },
@@ -338,6 +342,11 @@
       {
         "command": "likec4.export-svg-graphviz-of-currentview",
         "title": "%ext.cmd.export-svg-graphviz-of-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-jpeg-of-currentview",
+        "title": "%ext.cmd.export-jpeg-of-currentview%",
         "category": "%ext.title%"
       },
       {

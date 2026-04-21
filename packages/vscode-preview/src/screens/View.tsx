@@ -89,6 +89,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
   const {
     renderExportViewport,
     requestId,
+    exportSceneMode,
     exportDynamicVariant,
     onSurfaceReady,
   } = useExportViewportProvider({
@@ -200,6 +201,7 @@ const LikeC4ViewMemo = memo<{ projectId: ProjectId }>(({ projectId }) => {
           view={view}
           requestId={requestId}
           dynamicVariant={exportDynamicVariant}
+          mode={exportSceneMode}
           onReady={onSurfaceReady}
         />
       )}

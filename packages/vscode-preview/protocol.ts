@@ -79,6 +79,26 @@ export const ExportSvg: RequestType<{
   method: 'export-svg',
 }
 
+/**
+ * Phase 8+10: JPEG export request.
+ * Output files should use the `.jpg` extension while the MIME type is `image/jpeg`.
+ */
+export const ExportJpeg: RequestType<{
+  projectId: ProjectId
+  viewId: ViewId
+  pixelRatio?: number
+  maxWidth?: number
+  maxHeight?: number
+  /** Quality in range 0..1. Defaults to 0.92. */
+  quality?: number
+}, {
+  jpegBytes: Uint8Array | null
+  exportViewKind: 'sequence' | 'deployment' | null
+  error: string | null
+}> = {
+  method: 'export-jpeg',
+}
+
 export type OpenViewPayload = {
   screen: 'view'
   viewId: ViewId

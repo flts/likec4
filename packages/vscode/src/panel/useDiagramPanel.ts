@@ -317,6 +317,28 @@ export const useDiagramPanel = createSingletonComposable(() => {
         error: 'No preview panel found',
       }
     },
+    exportJpeg: async (params: {
+      maxWidth: number
+      maxHeight: number
+      pixelRatio: number
+      quality?: number
+    }) => {
+      if (state.participant) {
+        return await useMessenger().requestExportJpeg(state.participant, {
+          projectId: projectId.value,
+          viewId: viewId.value,
+          maxWidth: params.maxWidth,
+          maxHeight: params.maxHeight,
+          pixelRatio: params.pixelRatio,
+          ...(params.quality !== undefined ? { quality: params.quality } : {}),
+        })
+      }
+      return {
+        jpegBytes: null,
+        exportViewKind: null,
+        error: 'No preview panel found',
+      }
+    },
   } as const
 })
 export type DiagramPanel = ReturnType<typeof useDiagramPanel>
