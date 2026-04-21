@@ -60,6 +60,7 @@ export async function serializeWithSnapdom(
       }
     }
 
+    console.warn('[likec4-export] serializeWithSnapdom: unrecognized SVG data URL format, src prefix:', src.slice(0, 50))
     return null
   } catch (err) {
     console.error('[likec4-export] serializeWithSnapdom failed:', err)

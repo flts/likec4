@@ -42,10 +42,8 @@ export function registerExportJpegOfCurrentViewCommand(
       const maxHeight = vscode.workspace
         .getConfiguration('likec4')
         .get<number>('export.imageMaxHeight', 8192)
-      // Phase 8: default pixel ratio 2 for JPEG (1x is often sufficient given JPEG compression)
-      const pixelRatio = vscode.workspace
-        .getConfiguration('likec4')
-        .get<number>('export.pngPixelRatio', 2)
+      // Phase 8: JPEG at 2x pixel ratio is typically sufficient given compression
+      const pixelRatio = 2
 
       const result = await Promise.race([
         preview.exportJpeg({

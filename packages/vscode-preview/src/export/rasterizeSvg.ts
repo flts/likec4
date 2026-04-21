@@ -98,7 +98,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
-    img.onerror = (e) => reject(new Error(`Failed to load image: ${String(e)}`))
+    img.onerror = () => reject(new Error(`Failed to load SVG as image (source length: ${src.length})`))
     img.src = src
   })
 }

@@ -30,13 +30,14 @@ function waitForImages(root: HTMLElement, timeoutMs: number): Promise<void> {
   })
 
   const allImages = Promise.all(imagePromises).then(() => {})
-  const timeout = new Promise<void>(resolve => {
-    const id = window.setTimeout(() => resolve(), timeoutMs)
-    // Ensure the timeout is cleared after the images resolve first
-    allImages.then(() => window.clearTimeout(id))
-  })
 
-  return Promise.race([allImages, timeout])
+  return new Promise<void>(resolve => {
+    const timerId = window.setTimeout(() => resolve(), timeoutMs)
+    allImages.then(() => {
+      window.clearTimeout(timerId)
+      resolve()
+    })
+  })
 }
 
 /**
