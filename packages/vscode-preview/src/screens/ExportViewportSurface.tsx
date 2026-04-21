@@ -22,22 +22,18 @@ const exportBaseStyle = {
 
 const EXPORT_PADDING = 20
 const EXPORT_EXTRA_PADDING = 16
-const EXPORT_PROVIDER_TIMEOUT_MS = 5000
+const EXPORT_PROVIDER_TIMEOUT_MS = 1000
 /** Timeout for waiting for descendant images to load in the export scene. */
 const EXPORT_IMAGE_WAIT_TIMEOUT_MS = 2000
-
-// ---------------------------------------------------------------------------
-// Phase 2 + 13: Export scene mode types and metadata
-// ---------------------------------------------------------------------------
 
 /**
  * Ready payload returned by the export surface once the scene is stable.
  * Contains the export element and associated scene metadata.
  */
 export type ExportViewportSurfaceReadyPayload = {
-  /** The export element (has `data-export-root`), or null on failure. */
+  /** The export element, or null on failure. */
   element: HTMLElement | null
-  /** Scene metadata (Phase 13). Null when element is null. */
+  /** Scene metadata. Null when element is null. */
   metadata: ExportSceneMetadata | null
 }
 
@@ -179,15 +175,6 @@ export function useExportViewportProvider({
   }
 }
 
-/**
- * Phase 1: Export surface component that renders a hidden, non-interactive LikeC4Diagram
- * positioned off-screen. Exposes a stable export element marked with `data-export-root`.
- *
- * Phase 3: Readiness is hardened — we wait for `document.fonts.ready`, descendant
- * images, and two animation frames before resolving the `onReady` callback.
- *
- * Phase 13: Returns metadata (logicalWidth, logicalHeight, mode, background) alongside the element.
- */
 export function ExportViewportSurface({
   view,
   requestId,
@@ -198,7 +185,6 @@ export function ExportViewportSurface({
   view: DiagramView
   requestId: number
   dynamicVariant: 'diagram' | 'sequence' | undefined
-  /** Phase 2: explicit scene mode. */
   mode: ExportSceneMode
   onReady: (payload: ExportViewportSurfaceReadyPayload) => void
 }) {
@@ -225,8 +211,8 @@ export function ExportViewportSurface({
     [logicalWidth, logicalHeight],
   )
 
-  // Phase 3: Harden readiness — wait for fonts, images, and animation frames
-  // before calling onReady. Also apply the viewport transform here.
+  // Wait for fonts, images, and animation frames before calling onReady.
+  // Also apply the viewport transform here.
   const onInitialized = useCallback(() => {
     const root = rootRef.current
     if (!root) {
@@ -254,7 +240,6 @@ export function ExportViewportSurface({
       viewport.style.transform = `translate(${x}px, ${y}px)`
     }
 
-    // Phase 13: Build scene metadata
     const background: ExportSceneBackground = 'transparent'
     const metadata: ExportSceneMetadata = {
       logicalWidth,
@@ -264,7 +249,6 @@ export function ExportViewportSurface({
       exportViewKind: null, // will be set by the provider
     }
 
-    // Phase 3: Wait for scene readiness before resolving
     waitForExportSceneReady(root, EXPORT_IMAGE_WAIT_TIMEOUT_MS).then(
       () => onReady({ element: exportElement, metadata }),
       () => onReady({ element: exportElement, metadata }), // proceed even on error
@@ -279,7 +263,7 @@ export function ExportViewportSurface({
       data-export-scene-mode={mode}
       data-testid="vscode-preview-export-surface"
     >
-      {/* Phase 1: Stable export root without hidden wrapper styles. */}
+      {/* Stable export root without hidden wrapper styles. */}
       <div data-export-root="" data-export-diagram="" style={{ width: '100%', height: '100%' }}>
         <LikeC4Diagram
           key={`export-${view.id}-${dynamicVariant ?? 'none'}-${requestId}`}

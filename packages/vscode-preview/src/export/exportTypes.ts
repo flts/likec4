@@ -4,19 +4,11 @@
 export type ExportFormat = 'svg' | 'png' | 'jpeg'
 
 /**
- * The backend used for serializing the export scene.
- * - `foreignObject`: native SVG wrapping `<foreignObject>` with the HTML content
- * - `snapdom`: SnapDOM-based clone-and-serialize approach
- */
-export type ExportBackend = 'foreignObject' | 'snapdom'
-
-/**
  * The scene mode for the export.
  * - `diagram`: export the diagram only (default)
  * - `diagram-with-legend`: export the diagram with a legend overlay
- * - `legend-only`: export only the legend
  */
-export type ExportSceneMode = 'diagram' | 'diagram-with-legend' | 'legend-only'
+export type ExportSceneMode = 'diagram' | 'diagram-with-legend'
 
 /**
  * The background mode for the export.

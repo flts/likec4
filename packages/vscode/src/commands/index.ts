@@ -2,6 +2,7 @@ import useTelemetry from '#useTelemetry'
 import { useDiagramPanel } from '../panel'
 import { useLanguageClient } from '../useLanguageClient'
 import { useRpc } from '../useRpc'
+import { registerExportCurrentViewCommand } from './exportCurrentView'
 import { registerExportD2OfCurrentViewCommand } from './exportD2OfCurrentView'
 import { registerExportDotOfCurrentViewCommand } from './exportDotOfCurrentView'
 import { registerExportJpegOfCurrentViewCommand } from './exportJpegOfCurrentView'
@@ -15,6 +16,7 @@ import { registerOpenPreviewCommand } from './openPreview'
 import { registerOpenProjectsOverviewCommand } from './openProjectsOverview'
 import { registerPreviewContextOpenSourceCommand } from './previewContextOpenSource'
 import { registerPrintDotOfCurrentViewCommand } from './printDotOfCurrentView'
+import { registerQuickExportCurrentViewCommand } from './quickExportCurrentView'
 import { registerReloadProjectsCommand } from './reloadProjects'
 import { registerRestartCommand } from './restart'
 import { registerValidateLayoutCommand } from './validateLayout'
@@ -42,6 +44,8 @@ export function registerCommands() {
   registerOpenProjectsOverviewCommand(deps)
   registerLocateCommand(deps)
   registerPreviewContextOpenSourceCommand(deps)
+  registerExportCurrentViewCommand(deps)
+  registerQuickExportCurrentViewCommand(deps)
   registerPrintDotOfCurrentViewCommand(deps)
   registerExportDotOfCurrentViewCommand(deps)
   registerExportD2OfCurrentViewCommand(deps)

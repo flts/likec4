@@ -27,8 +27,8 @@ import {
   ViewChangeReq,
   WebviewMsgs,
 } from '../protocol'
-import { applySvgMaxDimensions, serializeWithForeignObject } from './export/serializeWithForeignObject'
 import { rasterizeSvg } from './export/rasterizeSvg'
+import { applySvgMaxDimensions, serializeWithForeignObject } from './export/serializeWithForeignObject'
 import type { ExportViewportProviderPayload } from './screens/ExportViewportSurface'
 
 export type VscodeState = {
@@ -133,12 +133,12 @@ export const ExtensionApi = {
     messenger.onRequest(GetLastClickedNode, handler)
   },
 
-  onExportPngRequest: (handler: Handler<typeof ExportPng>) => {
-    messenger.onRequest(ExportPng, handler)
-  },
-
   onExportSvgRequest: (handler: Handler<typeof ExportSvg>) => {
     messenger.onRequest(ExportSvg, handler)
+  },
+
+  onExportPngRequest: (handler: Handler<typeof ExportPng>) => {
+    messenger.onRequest(ExportPng, handler)
   },
 
   onExportJpegRequest: (handler: Handler<typeof ExportJpeg>) => {
@@ -173,9 +173,64 @@ export const ExtensionApi = {
 let exportViewportProvider: null | (() => Promise<ExportViewportProviderPayload>) = null
 let clearExportViewport: null | (() => void) = null
 
-// ---------------------------------------------------------------------------
-// Phase 5+6+7: SVG (foreignObject) → PNG export handler
-// ---------------------------------------------------------------------------
+ExtensionApi.onExportSvgRequest(async (params) => {
+  console.log('[likec4-preview] export-svg request')
+  const maxWidth = Number.isFinite(params?.maxWidth)
+    ? Math.max(512, Math.floor(Number(params?.maxWidth)))
+    : Number.POSITIVE_INFINITY
+  const maxHeight = Number.isFinite(params?.maxHeight)
+    ? Math.max(512, Math.floor(Number(params?.maxHeight)))
+    : Number.POSITIVE_INFINITY
+
+  const exportViewport = exportViewportProvider
+    ? await exportViewportProvider()
+    : { element: null, metadata: null, exportViewKind: null }
+  const element = exportViewport.element
+  const metadata = exportViewport.metadata
+
+  if (!element || !metadata) {
+    console.warn('[likec4-preview] export-svg: export scene not ready')
+    clearExportViewport?.()
+    return {
+      svg: null,
+      exportViewKind: exportViewport.exportViewKind,
+      error: 'Diagram viewport not found',
+    }
+  }
+
+  try {
+    // Serialize to SVG using the SVG ForeignObject backend
+    console.time('serializeWithForeignObject (SVG)')
+    const svgText = serializeWithForeignObject(element, {
+      ...metadata,
+      background: 'transparent',
+    })
+    console.timeEnd('serializeWithForeignObject (SVG)')
+
+    // Apply max-dimension constraints
+    const svg = applySvgMaxDimensions(
+      svgText,
+      metadata.logicalWidth,
+      metadata.logicalHeight,
+      maxWidth,
+      maxHeight,
+    )
+    clearExportViewport?.()
+    return {
+      svg,
+      exportViewKind: exportViewport.exportViewKind,
+      error: null,
+    }
+  } catch (err) {
+    console.error(err)
+    clearExportViewport?.()
+    return {
+      svg: null,
+      exportViewKind: exportViewport.exportViewKind,
+      error: 'Failed to export SVG',
+    }
+  }
+})
 
 ExtensionApi.onExportPngRequest(async (params) => {
   console.log('[likec4-preview] export-png request')
@@ -206,7 +261,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
   }
 
   try {
-    // Phase 5: Serialize to SVG using the foreignObject backend
+    // Serialize to SVG using the SVG ForeignObject backend
     console.time('serializeWithForeignObject (PNG)')
     const svgText = serializeWithForeignObject(element, {
       ...metadata,
@@ -214,7 +269,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
     })
     console.timeEnd('serializeWithForeignObject (PNG)')
 
-    // Phase 7: Rasterize SVG to PNG
+    // Rasterize SVG to PNG
     console.time('rasterizeSvg (PNG)')
     const blob = await rasterizeSvg(svgText, metadata.logicalWidth, metadata.logicalHeight, {
       format: 'png',
@@ -251,73 +306,6 @@ ExtensionApi.onExportPngRequest(async (params) => {
   }
 })
 
-// ---------------------------------------------------------------------------
-// Phase 5+6: SVG (foreignObject) export handler
-// ---------------------------------------------------------------------------
-
-ExtensionApi.onExportSvgRequest(async (params) => {
-  console.log('[likec4-preview] export-svg request')
-  const maxWidth = Number.isFinite(params?.maxWidth)
-    ? Math.max(512, Math.floor(Number(params?.maxWidth)))
-    : Number.POSITIVE_INFINITY
-  const maxHeight = Number.isFinite(params?.maxHeight)
-    ? Math.max(512, Math.floor(Number(params?.maxHeight)))
-    : Number.POSITIVE_INFINITY
-
-  const exportViewport = exportViewportProvider
-    ? await exportViewportProvider()
-    : { element: null, metadata: null, exportViewKind: null }
-  const element = exportViewport.element
-  const metadata = exportViewport.metadata
-
-  if (!element || !metadata) {
-    console.warn('[likec4-preview] export-svg: export scene not ready')
-    clearExportViewport?.()
-    return {
-      svg: null,
-      exportViewKind: exportViewport.exportViewKind,
-      error: 'Diagram viewport not found',
-    }
-  }
-
-  try {
-    // Phase 5: Serialize to SVG using the foreignObject backend
-    console.time('serializeWithForeignObject (SVG)')
-    const svgText = serializeWithForeignObject(element, {
-      ...metadata,
-      background: 'transparent',
-    })
-    console.timeEnd('serializeWithForeignObject (SVG)')
-
-    // Apply max-dimension constraints (Phase 6)
-    const svg = applySvgMaxDimensions(
-      svgText,
-      metadata.logicalWidth,
-      metadata.logicalHeight,
-      maxWidth,
-      maxHeight,
-    )
-    clearExportViewport?.()
-    return {
-      svg,
-      exportViewKind: exportViewport.exportViewKind,
-      error: null,
-    }
-  } catch (err) {
-    console.error(err)
-    clearExportViewport?.()
-    return {
-      svg: null,
-      exportViewKind: exportViewport.exportViewKind,
-      error: 'Failed to export SVG',
-    }
-  }
-})
-
-// ---------------------------------------------------------------------------
-// Phase 8: SVG (foreignObject) → JPEG export handler
-// ---------------------------------------------------------------------------
-
 ExtensionApi.onExportJpegRequest(async (params) => {
   console.log('[likec4-preview] export-jpeg request')
   const maxWidth = Number.isFinite(params?.maxWidth)
@@ -326,13 +314,11 @@ ExtensionApi.onExportJpegRequest(async (params) => {
   const maxHeight = Number.isFinite(params?.maxHeight)
     ? Math.max(512, Math.floor(Number(params?.maxHeight)))
     : Number.POSITIVE_INFINITY
-  // Phase 8: quality in 0..1, default 0.92
+  // quality in 0..1, default 0.92
   const quality = Number.isFinite(params?.quality)
     ? Math.max(0.1, Math.min(1, Number(params?.quality)))
     : 0.92
-  const pixelRatio = Number.isFinite(params?.pixelRatio)
-    ? Math.min(4, Math.max(1, Number(params?.pixelRatio)))
-    : 2
+  const pixelRatio = 2
 
   const exportViewport = exportViewportProvider
     ? await exportViewportProvider()
@@ -351,7 +337,7 @@ ExtensionApi.onExportJpegRequest(async (params) => {
   }
 
   try {
-    // Phase 8: Serialize with solid-theme background (JPEG has no transparency)
+    // Serialize with solid-theme background (JPEG has no transparency)
     console.time('serializeWithForeignObject (JPEG)')
     const svgText = serializeWithForeignObject(element, {
       ...metadata,
@@ -359,7 +345,7 @@ ExtensionApi.onExportJpegRequest(async (params) => {
     })
     console.timeEnd('serializeWithForeignObject (JPEG)')
 
-    // Phase 8: Rasterize SVG to JPEG
+    // Rasterize SVG to JPEG
     console.time('rasterizeSvg (JPEG)')
     const blob = await rasterizeSvg(svgText, metadata.logicalWidth, metadata.logicalHeight, {
       format: 'jpeg',

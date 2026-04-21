@@ -6,6 +6,8 @@
   "ext.cmd.locate": "Locate element",
   "ext.cmd.preview-context-open-source": "Open source",
   "ext.cmd.print-dot-of-currentview": "Print DOT of current view to output",
+  "ext.cmd.export-currentview": "Export current view",
+  "ext.cmd.quick-export-currentview": "Export current view (Quick)",
   "ext.cmd.export-dot-of-currentview": "Export DOT of current view",
   "ext.cmd.export-d2-of-currentview": "Export D2 of current view",
   "ext.cmd.export-mmd-of-currentview": "Export Mermaid of current view",

@@ -194,6 +194,28 @@
           "maximum": 4,
           "description": "Pixel ratio used for PNG export from preview. Higher values improve quality but can significantly increase export time and memory usage."
         },
+        "likec4.export.jpegQuality": {
+          "type": "number",
+          "default": 92,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "JPEG quality used for export from preview. Stored as 0 to 100 and converted internally to 0 to 1."
+        },
+        "likec4.export.lastFormat": {
+          "type": "string",
+          "default": "",
+          "enum": [
+            "svg",
+            "png",
+            "jpeg",
+            "mermaid",
+            "dot",
+            "d2",
+            "puml",
+            "svg-graphviz"
+          ],
+          "description": "Last format selected in the guided export flow. Used by the quick export command."
+        },
         "likec4.export.imageMaxWidth": {
           "type": "number",
           "default": 8192,
@@ -233,36 +255,44 @@
           "when": "likec4.activated"
         },
         {
-          "command": "likec4.export-dot-of-currentview",
+          "command": "likec4.export-currentview",
           "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.quick-export-currentview",
+          "when": "likec4.activated"
+        },
+        {
+          "command": "likec4.export-dot-of-currentview",
+          "when": "false"
         },
         {
           "command": "likec4.export-d2-of-currentview",
-          "when": "likec4.activated"
+          "when": "false"
         },
         {
           "command": "likec4.export-mmd-of-currentview",
-          "when": "likec4.activated"
+          "when": "false"
         },
         {
           "command": "likec4.export-png-of-currentview",
-          "when": "likec4.activated"
+          "when": "false"
         },
         {
           "command": "likec4.export-puml-of-currentview",
-          "when": "likec4.activated"
+          "when": "false"
         },
         {
           "command": "likec4.export-svg-of-currentview",
-          "when": "likec4.activated"
+          "when": "false"
         },
         {
           "command": "likec4.export-svg-graphviz-of-currentview",
-          "when": "likec4.activated"
+          "when": "false"
         },
         {
           "command": "likec4.export-jpeg-of-currentview",
-          "when": "likec4.activated"
+          "when": "false"
         },
         {
           "command": "likec4.reload-projects",
@@ -302,6 +332,16 @@
       {
         "command": "likec4.locate",
         "title": "%ext.cmd.locate%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.export-currentview",
+        "title": "%ext.cmd.export-currentview%",
+        "category": "%ext.title%"
+      },
+      {
+        "command": "likec4.quick-export-currentview",
+        "title": "%ext.cmd.quick-export-currentview%",
         "category": "%ext.title%"
       },
       {

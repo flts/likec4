@@ -286,6 +286,21 @@ export const useDiagramPanel = createSingletonComposable(() => {
         deployment: null,
       }
     },
+    exportSvg: async (params: { maxWidth: number; maxHeight: number }) => {
+      if (state.participant) {
+        return await useMessenger().requestExportSvg(state.participant, {
+          projectId: projectId.value,
+          viewId: viewId.value,
+          maxWidth: params.maxWidth,
+          maxHeight: params.maxHeight,
+        })
+      }
+      return {
+        svg: null,
+        exportViewKind: null,
+        error: 'No preview panel found',
+      }
+    },
     exportPng: async (params: { pixelRatio: number; maxWidth: number; maxHeight: number }) => {
       if (state.participant) {
         return await useMessenger().requestExportPng(state.participant, {
@@ -302,35 +317,14 @@ export const useDiagramPanel = createSingletonComposable(() => {
         error: 'No preview panel found',
       }
     },
-    exportSvg: async (params: { maxWidth: number; maxHeight: number }) => {
-      if (state.participant) {
-        return await useMessenger().requestExportSvg(state.participant, {
-          projectId: projectId.value,
-          viewId: viewId.value,
-          maxWidth: params.maxWidth,
-          maxHeight: params.maxHeight,
-        })
-      }
-      return {
-        svg: null,
-        exportViewKind: null,
-        error: 'No preview panel found',
-      }
-    },
-    exportJpeg: async (params: {
-      maxWidth: number
-      maxHeight: number
-      pixelRatio: number
-      quality?: number
-    }) => {
+    exportJpeg: async (params: { maxWidth: number; maxHeight: number; quality: number }) => {
       if (state.participant) {
         return await useMessenger().requestExportJpeg(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
           maxWidth: params.maxWidth,
           maxHeight: params.maxHeight,
-          pixelRatio: params.pixelRatio,
-          ...(params.quality !== undefined ? { quality: params.quality } : {}),
+          quality: params.quality,
         })
       }
       return {
