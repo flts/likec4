@@ -90,17 +90,6 @@ export async function updateExportSetting<T extends string | number>(key: string
   await vscode.workspace.getConfiguration('likec4').update(key, value, vscode.ConfigurationTarget.Global)
 }
 
-export function getCurrentPreviewTarget(preview: PreviewPanel) {
-  const { logger } = useExtensionLogger()
-  const viewId = toValue(preview.viewId)
-  const projectId = toValue(preview.projectId)
-  if (!viewId || !projectId) {
-    logger.warn('No preview panel found')
-    return null
-  }
-  return { viewId, projectId }
-}
-
 function getExportFileName(viewId: string, extension: string, exportViewKind: 'sequence' | 'deployment' | null) {
   if (exportViewKind === 'sequence') {
     return `${viewId}.sequence.${extension}`
@@ -119,13 +108,16 @@ export async function runExportCurrentView(
   deps: ExportCurrentViewDeps,
   selection: ExportCurrentViewSelection,
 ) {
-  const target = getCurrentPreviewTarget(deps.preview)
-  if (!target) {
-    await vscode.window.showInformationMessage('Open a preview to export the current view.')
+  const { logger } = useExtensionLogger()
+  const viewId = toValue(deps.preview.viewId)
+  const projectId = toValue(deps.preview.projectId)
+  const visible = toValue(deps.preview.visible)
+  if (!viewId || !projectId || !visible) {
+    logger.warn('No preview panel found')
+    await vscode.window.showErrorMessage('Open a preview to export the current view.')
     return
   }
 
-  const { viewId, projectId } = target
   const settings = getExportConfig()
 
   switch (selection.format) {

@@ -132,7 +132,7 @@ async function pickJpegQuality(currentValue?: number) {
   const input = await vscode.window.showInputBox({
     title: 'JPEG quality',
     prompt: 'Enter a value between 0 and 100',
-    value: currentValue !== undefined ? String(currentValue) : undefined,
+    ...(currentValue !== undefined ? { value: String(currentValue) } : {}),
     validateInput: value => {
       const parsed = Number(value)
       if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) {
