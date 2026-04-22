@@ -34,7 +34,7 @@ export function serializeWithForeignObject(
   const { logicalWidth, logicalHeight, background } = metadata
 
   const embeddedStyles = collectEmbeddedStyles(element)
-  const rootVars = collectRootCssVariables()
+  const rootVars = collectRootCssVariables(element)
 
   // Serialize element as XHTML so the foreignObject subtree stays valid XML.
   let elementContent: string
@@ -61,7 +61,7 @@ export function serializeWithForeignObject(
   ]
 
   if (background === 'solid-theme') {
-    const bgColor = resolveThemeBackgroundColor()
+    const bgColor = metadata.backgroundColor || resolveThemeBackgroundColor(element, metadata.colorScheme)
     parts.push(`<rect width="100%" height="100%" fill="${bgColor}"/>`)
   }
 

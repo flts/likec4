@@ -52,6 +52,8 @@ export const FetchProjectsOverview: RequestType<never, { projectsView: LayoutedP
   method: 'fetch-projects-overview',
 }
 
+export type ExportColorSchemeSetting = 'inherit' | 'light' | 'dark'
+
 /**
  * SVG export request.
  * Output files should use the `.svg` extension while the MIME type is `image/svg+xml`.
@@ -59,6 +61,7 @@ export const FetchProjectsOverview: RequestType<never, { projectsView: LayoutedP
 export const ExportSvg: RequestType<{
   projectId: ProjectId
   viewId: ViewId
+  colorScheme?: ExportColorSchemeSetting
   maxWidth?: number
   maxHeight?: number
 }, {
@@ -76,6 +79,7 @@ export const ExportSvg: RequestType<{
 export const ExportPng: RequestType<{
   projectId: ProjectId
   viewId: ViewId
+  colorScheme?: ExportColorSchemeSetting
   pixelRatio?: number
   maxWidth?: number
   maxHeight?: number
@@ -94,6 +98,7 @@ export const ExportPng: RequestType<{
 export const ExportJpeg: RequestType<{
   projectId: ProjectId
   viewId: ViewId
+  colorScheme?: ExportColorSchemeSetting
   maxWidth?: number
   maxHeight?: number
   /** Quality in range 0..1. Defaults to 0.92. */

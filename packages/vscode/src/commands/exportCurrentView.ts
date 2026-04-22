@@ -1,3 +1,4 @@
+import type { ExportColorSchemeSetting } from '@likec4/vscode-preview/protocol'
 import { useCommand } from 'reactive-vscode'
 import * as vscode from 'vscode'
 import { commands } from '../meta'
@@ -10,6 +11,7 @@ import {
 } from './exportCurrentView.shared'
 
 type FormatQuickPickItem = vscode.QuickPickItem & { format: ExportFormat }
+type ColorSchemeQuickPickItem = vscode.QuickPickItem & { value: ExportColorSchemeSetting }
 type NumberQuickPickItem = vscode.QuickPickItem & { value: number }
 
 const formatItems: Array<{ label: string; description?: string; format: ExportFormat }> = [
@@ -24,6 +26,28 @@ const formatItems: Array<{ label: string; description?: string; format: ExportFo
 ]
 
 const jpegQualityPresets = [60, 75, 85, 92, 100] as const
+
+const colorSchemeItems: Array<{
+  label: string
+  description: string
+  value: ExportColorSchemeSetting
+}> = [
+  {
+    label: 'Inherit',
+    description: 'Use the current VS Code theme',
+    value: 'inherit',
+  },
+  {
+    label: 'Light',
+    description: 'Force light theme for this export',
+    value: 'light',
+  },
+  {
+    label: 'Dark',
+    description: 'Force dark theme for this export',
+    value: 'dark',
+  },
+]
 
 async function showQuickPickWithDefault<T extends vscode.QuickPickItem>(
   items: readonly T[],
@@ -73,6 +97,26 @@ async function pickFormat(lastFormat?: ExportFormat) {
       ...(activeItem ? { activeItem } : {}),
     },
   )
+}
+
+async function pickColorScheme(currentValue: ExportColorSchemeSetting) {
+  const items: ColorSchemeQuickPickItem[] = colorSchemeItems.map(item => ({
+    ...item,
+    ...(item.value === currentValue ? { detail: 'Current setting' } : {}),
+  }))
+  const activeItem = items.find(item => item.value === currentValue)
+
+  const selected = await showQuickPickWithDefault<ColorSchemeQuickPickItem>(
+    items,
+    {
+      canPickMany: false,
+      title: 'Export color scheme',
+      placeHolder: 'Select color scheme for this export',
+      ...(activeItem ? { activeItem } : {}),
+    },
+  )
+
+  return selected?.value
 }
 
 async function pickPngPixelRatio(currentValue?: number) {
@@ -155,6 +199,20 @@ export function registerExportCurrentViewCommand(deps: ExportCurrentViewDeps) {
     const selectedFormat = await pickFormat(settings.lastFormat)
     if (!selectedFormat) {
       return
+    }
+
+    const requiresColorSchemePrompt = selectedFormat.format === 'svg'
+      || selectedFormat.format === 'png'
+      || selectedFormat.format === 'jpeg'
+
+    let colorScheme: ExportColorSchemeSetting = settings.colorScheme ?? 'inherit'
+    if (requiresColorSchemePrompt) {
+      const selectedColorScheme = await pickColorScheme(colorScheme)
+      if (!selectedColorScheme) {
+        return
+      }
+      colorScheme = selectedColorScheme
+      await updateExportSetting('export.colorScheme', colorScheme)
     }
 
     if (selectedFormat.format === 'png') {

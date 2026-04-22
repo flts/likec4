@@ -205,6 +205,7 @@
           "type": "string",
           "default": "",
           "enum": [
+            "",
             "svg",
             "png",
             "jpeg",
@@ -215,6 +216,16 @@
             "svg-graphviz"
           ],
           "description": "Last format selected in the guided export flow. Used by the quick export command."
+        },
+        "likec4.export.colorScheme": {
+          "type": "string",
+          "default": "inherit",
+          "enum": [
+            "inherit",
+            "light",
+            "dark"
+          ],
+          "description": "Color scheme used for image exports. Inherit follows the current VS Code theme; light and dark apply only to the export surface."
         },
         "likec4.export.imageMaxWidth": {
           "type": "number",

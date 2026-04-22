@@ -24,6 +24,8 @@ export interface RasterizeOptions {
    * Defaults to 0.92.
    */
   quality?: number
+  /** Solid background color used for JPEG export. */
+  backgroundColor?: string
 }
 
 /**
@@ -47,8 +49,14 @@ export async function rasterizeSvg(
   sourceHeight: number,
   options: RasterizeOptions,
 ): Promise<Blob | null> {
-  const { format, pixelRatio = 1, maxWidth = Infinity, maxHeight = Infinity, quality = 0.92 } =
-    options
+  const {
+    format,
+    pixelRatio = 1,
+    maxWidth = Infinity,
+    maxHeight = Infinity,
+    quality = 0.92,
+    backgroundColor,
+  } = options
 
   // Apply max-dimension scaling
   const ratioByWidth = Number.isFinite(maxWidth)
@@ -78,7 +86,7 @@ export async function rasterizeSvg(
   // For JPEG, fill the canvas with the solid theme background first
   // (JPEG has no alpha channel, transparent areas become black without this)
   if (format === 'jpeg') {
-    ctx.fillStyle = resolveThemeBackgroundColor()
+    ctx.fillStyle = backgroundColor ?? resolveThemeBackgroundColor()
     ctx.fillRect(0, 0, canvasWidth, canvasHeight)
   }
 

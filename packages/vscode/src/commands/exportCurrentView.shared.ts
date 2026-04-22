@@ -1,3 +1,4 @@
+import type { ExportColorSchemeSetting } from '@likec4/vscode-preview/protocol'
 import { toValue } from 'reactive-vscode'
 import * as vscode from 'vscode'
 import { useExtensionLogger } from '../useExtensionLogger'
@@ -41,6 +42,7 @@ export function getExportConfig() {
   return {
     pngPixelRatio: config.get<number>('export.pngPixelRatio'),
     jpegQuality: config.get<number>('export.jpegQuality'),
+    colorScheme: config.get<ExportColorSchemeSetting>('export.colorScheme', 'inherit'),
     imageMaxWidth: config.get<number>('export.imageMaxWidth'),
     imageMaxHeight: config.get<number>('export.imageMaxHeight'),
     lastFormat: config.get<ExportFormat>('export.lastFormat'),
@@ -233,6 +235,7 @@ export async function runExportCurrentView(
 
         const result = await Promise.race([
           deps.preview.exportSvg({
+            colorScheme: settings.colorScheme,
             maxWidth: settings.imageMaxWidth!,
             maxHeight: settings.imageMaxHeight!,
           }),
@@ -279,6 +282,7 @@ export async function runExportCurrentView(
 
         const result = await Promise.race([
           deps.preview.exportPng({
+            colorScheme: settings.colorScheme,
             pixelRatio: selection.pngPixelRatio ?? settings.pngPixelRatio!,
             maxWidth: settings.imageMaxWidth!,
             maxHeight: settings.imageMaxHeight!,
@@ -325,6 +329,7 @@ export async function runExportCurrentView(
 
         const result = await Promise.race([
           deps.preview.exportJpeg({
+            colorScheme: settings.colorScheme,
             maxWidth: settings.imageMaxWidth!,
             maxHeight: settings.imageMaxHeight!,
             quality: asJpegQuality(selection.jpegQuality ?? settings.jpegQuality!),

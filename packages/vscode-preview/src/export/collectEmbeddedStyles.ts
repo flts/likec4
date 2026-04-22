@@ -1,3 +1,5 @@
+import type { ExportSceneColorScheme } from './exportTypes'
+
 /**
  * Collects all CSS text from the document's accessible stylesheets.
  * Skips cross-origin stylesheets that cannot be accessed.
@@ -36,12 +38,12 @@ export function collectEmbeddedStyles(forElement?: HTMLElement): string {
 }
 
 /**
- * Collects all CSS custom properties (variables) from the document root
+ * Collects all CSS custom properties (variables) from the provided element
  * and returns them as a `:root { ... }` CSS block string.
  * This is needed because CSS custom properties are not inherited into SVG context by default.
  */
-export function collectRootCssVariables(): string {
-  const rootStyle = getComputedStyle(document.documentElement)
+export function collectRootCssVariables(forElement?: HTMLElement): string {
+  const rootStyle = getComputedStyle(forElement ?? document.documentElement)
   const vars = new Map<string, string>()
 
   for (const prop of rootStyle) {
@@ -63,23 +65,39 @@ export function collectRootCssVariables(): string {
 }
 
 /**
- * Resolves the solid background color for JPEG exports.
- * Attempts to read VS Code's editor background variable, falling back to a sensible default.
+ * Resolves the solid background color for exports.
+ * Prefers colors from the export element and falls back to the document theme.
  */
-export function resolveThemeBackgroundColor(): string {
-  const vscodeColor = getComputedStyle(document.documentElement)
-    .getPropertyValue('--vscode-editor-background')
-    .trim()
+export function resolveThemeBackgroundColor(
+  forElement?: HTMLElement,
+  fallbackColorScheme: ExportSceneColorScheme = 'light',
+): string {
+  const primaryStyle = getComputedStyle(forElement ?? document.documentElement)
+  const fallbackStyle = getComputedStyle(document.documentElement)
 
-  if (vscodeColor) {
-    return vscodeColor
+  const candidates = [
+    primaryStyle.getPropertyValue('--mantine-color-body'),
+    primaryStyle.getPropertyValue('--vscode-editor-background'),
+    primaryStyle.backgroundColor,
+    fallbackStyle.getPropertyValue('--vscode-editor-background'),
+    getComputedStyle(document.body).backgroundColor,
+  ]
+
+  for (const candidate of candidates) {
+    const color = candidate.trim()
+    if (
+      color
+      && color !== 'transparent'
+      && color !== 'rgba(0, 0, 0, 0)'
+      && color !== 'rgba(0,0,0,0)'
+      && color !== 'inherit'
+      && color !== 'initial'
+      && color !== 'unset'
+      && !color.startsWith('var(')
+    ) {
+      return color
+    }
   }
 
-  // Fallback: read body background
-  const bodyColor = getComputedStyle(document.body).backgroundColor
-  if (bodyColor && bodyColor !== 'transparent' && bodyColor !== 'rgba(0, 0, 0, 0)') {
-    return bodyColor
-  }
-
-  return '#ffffff'
+  return fallbackColorScheme === 'dark' ? '#1e1e1e' : '#ffffff'
 }

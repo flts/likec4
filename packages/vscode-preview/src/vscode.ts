@@ -10,6 +10,7 @@ import type {
 import { CancellationTokenImpl, HOST_EXTENSION } from 'vscode-messenger-common'
 import { Messenger } from 'vscode-messenger-webview'
 import {
+  type ExportColorSchemeSetting,
   type GetLastClickedNodeHandler,
   type Handler,
   type WebviewLocateReq,
@@ -154,7 +155,7 @@ export const ExtensionApi = {
   },
 
   registerExportViewportProvider: (
-    provider: () => Promise<ExportViewportProviderPayload>,
+    provider: (params: { colorScheme?: ExportColorSchemeSetting }) => Promise<ExportViewportProviderPayload>,
     onClear?: (() => void) | undefined,
   ) => {
     exportViewportProvider = provider
@@ -170,7 +171,9 @@ export const ExtensionApi = {
   },
 }
 
-let exportViewportProvider: null | (() => Promise<ExportViewportProviderPayload>) = null
+let exportViewportProvider:
+  | null
+  | ((params: { colorScheme?: ExportColorSchemeSetting }) => Promise<ExportViewportProviderPayload>) = null
 let clearExportViewport: null | (() => void) = null
 
 ExtensionApi.onExportSvgRequest(async (params) => {
@@ -183,7 +186,7 @@ ExtensionApi.onExportSvgRequest(async (params) => {
     : Number.POSITIVE_INFINITY
 
   const exportViewport = exportViewportProvider
-    ? await exportViewportProvider()
+    ? await exportViewportProvider({ colorScheme: params?.colorScheme ?? 'inherit' })
     : { element: null, metadata: null, exportViewKind: null }
   const element = exportViewport.element
   const metadata = exportViewport.metadata
@@ -245,7 +248,7 @@ ExtensionApi.onExportPngRequest(async (params) => {
     : Number.POSITIVE_INFINITY
 
   const exportViewport = exportViewportProvider
-    ? await exportViewportProvider()
+    ? await exportViewportProvider({ colorScheme: params?.colorScheme ?? 'inherit' })
     : { element: null, metadata: null, exportViewKind: null }
   const element = exportViewport.element
   const metadata = exportViewport.metadata
@@ -321,7 +324,7 @@ ExtensionApi.onExportJpegRequest(async (params) => {
   const pixelRatio = 2
 
   const exportViewport = exportViewportProvider
-    ? await exportViewportProvider()
+    ? await exportViewportProvider({ colorScheme: params?.colorScheme ?? 'inherit' })
     : { element: null, metadata: null, exportViewKind: null }
   const element = exportViewport.element
   const metadata = exportViewport.metadata
@@ -353,6 +356,7 @@ ExtensionApi.onExportJpegRequest(async (params) => {
       maxWidth,
       maxHeight,
       quality,
+      backgroundColor: metadata.backgroundColor,
     })
     console.timeEnd('rasterizeSvg (JPEG)')
 
