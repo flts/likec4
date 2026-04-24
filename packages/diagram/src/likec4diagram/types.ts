@@ -1,5 +1,6 @@
 import type {
   AutoLayoutDirection,
+  AutoLayoutEdgeStyle,
   BBox,
   DeploymentFqn,
   DiagramEdge,
@@ -237,6 +238,7 @@ export namespace Types {
       notes: MarkdownOrString | null
       labelXY: XYPosition | null
       controlPoints: XYPosition[] | undefined | null
+      edgeStyle: AutoLayoutEdgeStyle | null
     }
   >
 

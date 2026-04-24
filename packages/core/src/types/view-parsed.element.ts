@@ -10,6 +10,7 @@ import type {
   AnyViewRuleStyle,
   BaseParsedViewProperties,
   ViewRuleAutoLayout,
+  ViewRuleEdgeStyle,
   ViewRuleGlobalPredicateRef,
   ViewRuleGlobalStyle,
   ViewRuleRank,
@@ -61,6 +62,7 @@ export type ElementViewRule<A extends AnyAux = AnyAux> = ExclusiveUnion<{
   GlobalStyle: ViewRuleGlobalStyle
   GlobalPredicateRef: ViewRuleGlobalPredicateRef
   AutoLayout: ViewRuleAutoLayout
+  EdgeStyle: ViewRuleEdgeStyle
   Rank: ElementViewRuleRank<A>
 }>
 

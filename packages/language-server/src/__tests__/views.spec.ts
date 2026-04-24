@@ -294,6 +294,32 @@ describe('views', () => {
       }
     }`
 
+  test('edgeStyle').valid`${model}
+    views {
+      view {
+        autoLayout TopBottom
+        edgeStyle ortho
+        include *
+      }
+      view {
+        autoLayout LeftRight 200 100
+        edgeStyle curved
+        include *
+      }
+      view {
+        edgeStyle polyline
+        include *
+      }
+      view {
+        edgeStyle line
+        include *
+      }
+      view {
+        edgeStyle spline
+        include *
+      }
+    }`
+
   test('view folders').valid`${model}
     views "Folder" {
       view index {

@@ -286,6 +286,8 @@ export function applyManualLayout<
     draft.links = autoLayouted.links ? [...autoLayouted.links] : null
     draft.sourcePath = autoLayouted.sourcePath
     draft[_layout] = 'manual' as const
+    // Keep autoLayout settings from the current view (e.g. edgeStyle rule changes)
+    draft.autoLayout = castDraft(autoLayouted.autoLayout)
 
     if (nodeNotations && nodeNotations.length > 0) {
       draft.notation = { nodes: nodeNotations }

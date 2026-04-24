@@ -9,6 +9,7 @@ import {
   parseMarkdownAsString,
   toAutoLayout,
   toColor,
+  toEdgeStyle,
   ViewOps,
 } from '../../ast'
 import { safeCall, stringHash } from '../../utils'
@@ -147,6 +148,9 @@ export function ViewsParser<TBase extends WithPredicates & WithDeploymentView>(B
       }
       if (ast.isViewRuleAutoLayout(astRule)) {
         return toAutoLayout(astRule)
+      }
+      if (ast.isViewRuleEdgeStyle(astRule)) {
+        return toEdgeStyle(astRule)
       }
       if (ast.isViewRuleGroup(astRule)) {
         return this.parseViewRuleGroup(astRule)
@@ -318,6 +322,9 @@ export function ViewsParser<TBase extends WithPredicates & WithDeploymentView>(B
       }
       if (ast.isViewRuleAutoLayout(astRule)) {
         return toAutoLayout(astRule)
+      }
+      if (ast.isViewRuleEdgeStyle(astRule)) {
+        return toEdgeStyle(astRule)
       }
       nonexhaustive(astRule)
     }

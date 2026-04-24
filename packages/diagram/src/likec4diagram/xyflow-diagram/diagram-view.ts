@@ -272,6 +272,7 @@ export function diagramToXY(opts: {
         tail: edge.tail ?? 'none',
         astPath: edge.astPath,
         drifts: edge.drifts ?? null,
+        edgeStyle: view.autoLayout?.edgeStyle ?? null,
       },
       interactionWidth: 20,
     })

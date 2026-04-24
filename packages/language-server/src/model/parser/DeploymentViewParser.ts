@@ -1,7 +1,7 @@
 import * as c4 from '@likec4/core'
 import { invariant, isNonEmptyArray, nonexhaustive } from '@likec4/core'
 import { filter, isNonNullish, mapToObj, pipe } from 'remeda'
-import { type ParsedAstDeploymentView, ast, parseMarkdownAsString, toAutoLayout, ViewOps } from '../../ast'
+import { type ParsedAstDeploymentView, ast, parseMarkdownAsString, toAutoLayout, toEdgeStyle, ViewOps } from '../../ast'
 import { logWarnError } from '../../logger'
 import { stringHash } from '../../utils'
 import { removeIndent, toSingleLine } from './Base'
@@ -63,6 +63,9 @@ export function DeploymentViewParser<TBase extends WithExpressionV2 & WithDeploy
       }
       if (ast.isViewRuleAutoLayout(astRule)) {
         return toAutoLayout(astRule)
+      }
+      if (ast.isViewRuleEdgeStyle(astRule)) {
+        return toEdgeStyle(astRule)
       }
       if (ast.isDeploymentViewRuleStyle(astRule)) {
         return this.parseDeploymentViewRuleStyle(astRule)

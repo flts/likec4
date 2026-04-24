@@ -8,6 +8,7 @@ import type {
   AnyViewRuleStyle,
   BaseParsedViewProperties,
   ViewRuleAutoLayout,
+  ViewRuleEdgeStyle,
 } from './view-common'
 
 /**
@@ -31,6 +32,7 @@ export type DeploymentViewRule<A extends AnyAux = Unknown> = ExclusiveUnion<{
   Exclude: DeploymentViewExcludePredicate<A>
   Style: DeploymentViewRuleStyle<A>
   AutoLayout: ViewRuleAutoLayout
+  EdgeStyle: ViewRuleEdgeStyle
 }>
 
 export interface ParsedDeploymentView<A extends AnyAux = Unknown> extends BaseParsedViewProperties<A> {

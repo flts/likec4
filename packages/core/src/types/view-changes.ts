@@ -2,7 +2,7 @@ import type { NonEmptyArray } from './_common'
 import type * as scalar from './scalar'
 import type { BorderStyle, ElementShape, ThemeColor } from './styles'
 import type { LayoutedView } from './view'
-import type { AutoLayoutDirection } from './view-common'
+import type { AutoLayoutDirection, AutoLayoutEdgeStyle } from './view-common'
 
 export namespace ViewChange {
   export interface ChangeElementStyle {
@@ -31,6 +31,7 @@ export namespace ViewChange {
       direction: AutoLayoutDirection
       nodeSep?: number | null
       rankSep?: number | null
+      edgeStyle?: AutoLayoutEdgeStyle | null
     }
   }
 }

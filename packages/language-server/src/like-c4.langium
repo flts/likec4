@@ -366,12 +366,16 @@ ViewStringProperty:
 ViewLayoutDirection returns string:
   'TopBottom' | 'LeftRight' | 'BottomTop' | 'RightLeft';
 
+ViewLayoutEdgeStyle returns string:
+  'spline' | 'ortho' | 'curved' | 'polyline' | 'line';
+
 ViewRule:
   ViewRulePredicate |
   ViewRuleGlobalPredicateRef |
   ViewRuleGroup |
   ViewRuleStyleOrGlobalRef |
   ViewRuleAutoLayout |
+  ViewRuleEdgeStyle |
   ViewRuleRank
 ;
 
@@ -401,7 +405,8 @@ DynamicViewRule:
   DynamicViewIncludePredicate |
   DynamicViewGlobalPredicateRef |
   ViewRuleStyleOrGlobalRef |
-  ViewRuleAutoLayout
+  ViewRuleAutoLayout |
+  ViewRuleEdgeStyle
 ;
 
 DynamicViewParallelSteps:
@@ -487,6 +492,9 @@ ViewRuleAutoLayout:
     rankSep=Number (
       nodeSep=Number)?
     )?;
+
+ViewRuleEdgeStyle:
+  'edgeStyle' style=ViewLayoutEdgeStyle;
 
 NotationProperty:
   key='notation' ':'? value=MarkdownOrString ';'?
@@ -759,7 +767,8 @@ DeploymentViewBody: '{'
 DeploymentViewRule:
   DeploymentViewRulePredicate |
   DeploymentViewRuleStyle |
-  ViewRuleAutoLayout
+  ViewRuleAutoLayout |
+  ViewRuleEdgeStyle
 ;
 
 DeploymentViewRuleStyle:

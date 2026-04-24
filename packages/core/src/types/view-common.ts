@@ -69,6 +69,27 @@ export function isAutoLayoutDirection(autoLayout: unknown): autoLayout is AutoLa
   return autoLayout === 'TB' || autoLayout === 'BT' || autoLayout === 'LR' || autoLayout === 'RL'
 }
 
+/**
+ * Controls the style of edges in auto-layout mode.
+ * Maps to graphviz `splines` attribute.
+ *
+ * - `spline`   - Bezier curved lines that avoid nodes (graphviz `spline`, default)
+ * - `ortho`    - orthogonal (right-angle) lines
+ * - `curved`   - curved lines (may overlap nodes)
+ * - `polyline` - straight line segments that avoid nodes
+ * - `line`     - straight lines
+ */
+export type AutoLayoutEdgeStyle = 'spline' | 'ortho' | 'curved' | 'polyline' | 'line'
+export function isAutoLayoutEdgeStyle(value: unknown): value is AutoLayoutEdgeStyle {
+  return (
+    value === 'spline'
+    || value === 'ortho'
+    || value === 'curved'
+    || value === 'polyline'
+    || value === 'line'
+  )
+}
+
 export interface ViewRuleAutoLayout {
   direction: AutoLayoutDirection
   nodeSep?: number
@@ -79,10 +100,19 @@ export function isViewRuleAutoLayout(rule: object): rule is ViewRuleAutoLayout {
   return 'direction' in rule
 }
 
+export interface ViewRuleEdgeStyle {
+  edgeStyle: AutoLayoutEdgeStyle
+}
+
+export function isViewRuleEdgeStyle(rule: object): rule is ViewRuleEdgeStyle {
+  return 'edgeStyle' in rule && !('direction' in rule)
+}
+
 export interface ViewAutoLayout {
   direction: ViewRuleAutoLayout['direction']
   rankSep?: number
   nodeSep?: number
+  edgeStyle?: AutoLayoutEdgeStyle
 }
 
 export type ViewType = 'element' | 'dynamic' | 'deployment'

@@ -54,4 +54,54 @@ describe('ElementViewPrinter', () => {
     expect(diagram).toMatch(/rank = "source";[\s\S]*"customer";[\s\S]*"support";/)
     expect(diagram).toMatch(/rank = "max";[\s\S]*"cloud";/)
   })
+
+  it('uses default splines when edgeStyle is not set', ({ expect }) => {
+    const diagram = print(computedIndexView)
+    expect(diagram).toContain('splines = "spline"')
+  })
+
+  it('uses spline splines when edgeStyle is spline', ({ expect }) => {
+    const view = {
+      ...computedIndexView,
+      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'spline' as const },
+    } as ComputedElementView
+    const diagram = print(view)
+    expect(diagram).toContain('splines = "spline"')
+  })
+
+  it('uses ortho splines when edgeStyle is ortho', ({ expect }) => {
+    const view = {
+      ...computedIndexView,
+      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'ortho' as const },
+    } as ComputedElementView
+    const diagram = print(view)
+    expect(diagram).toContain('splines = "ortho"')
+  })
+
+  it('uses curved splines when edgeStyle is curved', ({ expect }) => {
+    const view = {
+      ...computedIndexView,
+      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'curved' as const },
+    } as ComputedElementView
+    const diagram = print(view)
+    expect(diagram).toContain('splines = "curved"')
+  })
+
+  it('uses polyline splines when edgeStyle is polyline', ({ expect }) => {
+    const view = {
+      ...computedIndexView,
+      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'polyline' as const },
+    } as ComputedElementView
+    const diagram = print(view)
+    expect(diagram).toContain('splines = "polyline"')
+  })
+
+  it('uses line splines when edgeStyle is line', ({ expect }) => {
+    const view = {
+      ...computedIndexView,
+      autoLayout: { ...computedIndexView.autoLayout, edgeStyle: 'line' as const },
+    } as ComputedElementView
+    const diagram = print(view)
+    expect(diagram).toContain('splines = "line"')
+  })
 })

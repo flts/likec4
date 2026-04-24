@@ -762,6 +762,36 @@ describe('formating', () => {
     )
 
     it(
+      'formats edgeStyle property',
+      async ({ expect }) =>
+        expect(
+          await format`
+          views {
+            view {
+              autoLayout     TopBottom
+              edgeStyle   ortho
+            }
+            view {
+              autoLayout     LeftRight   100   50
+              edgeStyle     curved
+            }
+          }`,
+        ).toMatchInlineSnapshot(`
+          "
+          views {
+            view {
+              autoLayout TopBottom
+              edgeStyle ortho
+            }
+            view {
+              autoLayout LeftRight 100 50
+              edgeStyle curved
+            }
+          }"
+        `),
+    )
+
+    it(
       'formats groups',
       async ({ expect }) =>
         expect(

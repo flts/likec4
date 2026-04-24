@@ -405,6 +405,9 @@ export class LikeC4Formatter extends AbstractFormatter {
       f.property('rankSep').prepend(FormattingOptions.oneSpace)
       f.property('nodeSep').prepend(FormattingOptions.oneSpace)
     })
+    this.on(node, ast.isViewRuleEdgeStyle, (n, f) => {
+      f.keyword('edgeStyle').append(FormattingOptions.oneSpace)
+    })
   }
 
   protected formatMetadataProperty(node: AstNode) {

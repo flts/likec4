@@ -416,6 +416,12 @@ export function toAutoLayout(
   }
 }
 
+export function toEdgeStyle(
+  rule: ast.ViewRuleEdgeStyle,
+): c4.ViewRuleEdgeStyle {
+  return { edgeStyle: rule.style as c4.AutoLayoutEdgeStyle }
+}
+
 export function toAstViewLayoutDirection(c4: c4.ViewRuleAutoLayout['direction']): ast.ViewLayoutDirection {
   switch (c4) {
     case 'TB': {
