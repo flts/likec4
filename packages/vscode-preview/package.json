@@ -21,8 +21,8 @@
   "devDependencies": {
     "@fontsource-variable/ibm-plex-sans": "^5.2.8",
     "@likec4/core": "workspace:*",
-    "@likec4/diagram": "workspace:*",
     "@likec4/devops": "workspace:*",
+    "@likec4/diagram": "workspace:*",
     "@likec4/icons": "workspace:*",
     "@likec4/style-preset": "workspace:*",
     "@likec4/styles": "workspace:*",
@@ -41,11 +41,11 @@
     "@types/vscode": "catalog:vscode",
     "@types/vscode-webview": "^1.57.5",
     "@vitejs/plugin-react": "catalog:vite",
-    "babel-plugin-react-compiler": "catalog:react",
     "@xyflow/react": "catalog:xyflow",
     "@xyflow/system": "catalog:xyflow",
-    "fast-equals": "catalog:utils",
+    "babel-plugin-react-compiler": "catalog:react",
     "esm-env": "catalog:utils",
+    "fast-equals": "catalog:utils",
     "html-to-image": "1.11.11",
     "nanostores": "catalog:react",
     "object-hash": "catalog:utils",
@@ -57,8 +57,8 @@
     "tsx": "catalog:",
     "type-fest": "catalog:externals",
     "typescript": "catalog:",
-    "vitest": "catalog:vitest",
     "vite": "catalog:vite",
+    "vitest": "catalog:vitest",
     "vscode-messenger-common": "^0.5.1",
     "vscode-messenger-webview": "^0.5.1"
   }

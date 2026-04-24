@@ -7,15 +7,16 @@ import type {
   ViewChange,
   ViewId,
 } from '@likec4/core/types'
-import { toBlob, toSvg } from 'html-to-image'
 import { CancellationTokenImpl, HOST_EXTENSION } from 'vscode-messenger-common'
 import { Messenger } from 'vscode-messenger-webview'
 import {
+  type ExportColorSchemeSetting,
   type GetLastClickedNodeHandler,
   type Handler,
   type WebviewLocateReq,
   BroadcastModelUpdate,
   BroadcastProjectsUpdate,
+  ExportJpeg,
   ExportPng,
   ExportSvg,
   FetchComputedModel,
@@ -27,6 +28,9 @@ import {
   ViewChangeReq,
   WebviewMsgs,
 } from '../protocol'
+import { rasterizeSvg } from './export/rasterizeSvg'
+import { applySvgMaxDimensions, serializeWithForeignObject } from './export/serializeWithForeignObject'
+import type { ExportViewportProviderPayload } from './screens/ExportViewportSurface'
 
 export type VscodeState = {
   viewId: ViewId
@@ -130,12 +134,16 @@ export const ExtensionApi = {
     messenger.onRequest(GetLastClickedNode, handler)
   },
 
+  onExportSvgRequest: (handler: Handler<typeof ExportSvg>) => {
+    messenger.onRequest(ExportSvg, handler)
+  },
+
   onExportPngRequest: (handler: Handler<typeof ExportPng>) => {
     messenger.onRequest(ExportPng, handler)
   },
 
-  onExportSvgRequest: (handler: Handler<typeof ExportSvg>) => {
-    messenger.onRequest(ExportSvg, handler)
+  onExportJpegRequest: (handler: Handler<typeof ExportJpeg>) => {
+    messenger.onRequest(ExportJpeg, handler)
   },
 
   onModelUpdateNotification: (handler: () => void) => {
@@ -147,7 +155,7 @@ export const ExtensionApi = {
   },
 
   registerExportViewportProvider: (
-    provider: () => Promise<ExportViewportPayload>,
+    provider: (params: { colorScheme?: ExportColorSchemeSetting }) => Promise<ExportViewportProviderPayload>,
     onClear?: (() => void) | undefined,
   ) => {
     exportViewportProvider = provider
@@ -163,63 +171,13 @@ export const ExtensionApi = {
   },
 }
 
-const emptyGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
-type ExportViewportPayload = {
-  element: HTMLElement | null
-  exportViewKind: 'sequence' | 'deployment' | null
-}
-let exportViewportProvider: null | (() => Promise<ExportViewportPayload>) = null
+let exportViewportProvider:
+  | null
+  | ((params: { colorScheme?: ExportColorSchemeSetting }) => Promise<ExportViewportProviderPayload>) = null
 let clearExportViewport: null | (() => void) = null
 
-const exportFrameBudgetMs = 16
-
-async function yieldToBrowser() {
-  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
-  if (typeof requestIdleCallback === 'function') {
-    await new Promise<void>(resolve => requestIdleCallback(() => resolve(), { timeout: exportFrameBudgetMs }))
-  }
-}
-
-function applySvgMaxDimensions(
-  svgText: string,
-  sourceWidth: number,
-  sourceHeight: number,
-  maxWidth: number,
-  maxHeight: number,
-) {
-  if (!Number.isFinite(maxWidth) && !Number.isFinite(maxHeight)) {
-    return svgText
-  }
-
-  const ratioByWidth = Number.isFinite(maxWidth) ? maxWidth / Math.max(1, sourceWidth) : Number.POSITIVE_INFINITY
-  const ratioByHeight = Number.isFinite(maxHeight) ? maxHeight / Math.max(1, sourceHeight) : Number.POSITIVE_INFINITY
-  const scale = Math.max(0.1, Math.min(1, ratioByWidth, ratioByHeight))
-  if (scale >= 1) {
-    return svgText
-  }
-
-  const targetWidth = Math.max(1, Math.floor(sourceWidth * scale))
-  const targetHeight = Math.max(1, Math.floor(sourceHeight * scale))
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(svgText, 'image/svg+xml')
-  const root = doc.documentElement
-  if (!root || root.nodeName.toLowerCase() !== 'svg') {
-    return svgText
-  }
-
-  root.setAttribute('viewBox', `0 0 ${sourceWidth} ${sourceHeight}`)
-  root.setAttribute('width', String(targetWidth))
-  root.setAttribute('height', String(targetHeight))
-  if (!root.getAttribute('preserveAspectRatio')) {
-    root.setAttribute('preserveAspectRatio', 'xMidYMid meet')
-  }
-
-  return new XMLSerializer().serializeToString(root)
-}
-
-ExtensionApi.onExportPngRequest(async (params) => {
-  console.log('[likec4-preview] export-png request')
-  const pixelRatio = Number.isFinite(params?.pixelRatio) ? Math.min(4, Math.max(1, Number(params?.pixelRatio))) : 3
+ExtensionApi.onExportSvgRequest(async (params) => {
+  console.log('[likec4-preview] export-svg request')
   const maxWidth = Number.isFinite(params?.maxWidth)
     ? Math.max(512, Math.floor(Number(params?.maxWidth)))
     : Number.POSITIVE_INFINITY
@@ -228,11 +186,75 @@ ExtensionApi.onExportPngRequest(async (params) => {
     : Number.POSITIVE_INFINITY
 
   const exportViewport = exportViewportProvider
-    ? await exportViewportProvider()
-    : { element: null, exportViewKind: null }
-  const diagramViewport = exportViewport.element
-  if (!diagramViewport) {
-    console.warn('[likec4-preview] export-png: react-flow viewport not found')
+    ? await exportViewportProvider({ colorScheme: params?.colorScheme ?? 'inherit' })
+    : { element: null, metadata: null, exportViewKind: null }
+  const element = exportViewport.element
+  const metadata = exportViewport.metadata
+
+  if (!element || !metadata) {
+    console.warn('[likec4-preview] export-svg: export scene not ready')
+    clearExportViewport?.()
+    return {
+      svg: null,
+      exportViewKind: exportViewport.exportViewKind,
+      error: 'Diagram viewport not found',
+    }
+  }
+
+  try {
+    // Serialize to SVG using the SVG ForeignObject backend
+    console.time('serializeWithForeignObject (SVG)')
+    const svgText = serializeWithForeignObject(element, {
+      ...metadata,
+      background: 'transparent',
+    })
+    console.timeEnd('serializeWithForeignObject (SVG)')
+
+    // Apply max-dimension constraints
+    const svg = applySvgMaxDimensions(
+      svgText,
+      metadata.logicalWidth,
+      metadata.logicalHeight,
+      maxWidth,
+      maxHeight,
+    )
+    clearExportViewport?.()
+    return {
+      svg,
+      exportViewKind: exportViewport.exportViewKind,
+      error: null,
+    }
+  } catch (err) {
+    console.error(err)
+    clearExportViewport?.()
+    return {
+      svg: null,
+      exportViewKind: exportViewport.exportViewKind,
+      error: 'Failed to export SVG',
+    }
+  }
+})
+
+ExtensionApi.onExportPngRequest(async (params) => {
+  console.log('[likec4-preview] export-png request')
+  const pixelRatio = Number.isFinite(params?.pixelRatio)
+    ? Math.min(4, Math.max(1, Number(params?.pixelRatio)))
+    : 3
+  const maxWidth = Number.isFinite(params?.maxWidth)
+    ? Math.max(512, Math.floor(Number(params?.maxWidth)))
+    : Number.POSITIVE_INFINITY
+  const maxHeight = Number.isFinite(params?.maxHeight)
+    ? Math.max(512, Math.floor(Number(params?.maxHeight)))
+    : Number.POSITIVE_INFINITY
+
+  const exportViewport = exportViewportProvider
+    ? await exportViewportProvider({ colorScheme: params?.colorScheme ?? 'inherit' })
+    : { element: null, metadata: null, exportViewKind: null }
+  const element = exportViewport.element
+  const metadata = exportViewport.metadata
+
+  if (!element || !metadata) {
+    console.warn('[likec4-preview] export-png: export scene not ready')
     clearExportViewport?.()
     return {
       pngBytes: null,
@@ -241,39 +263,25 @@ ExtensionApi.onExportPngRequest(async (params) => {
     }
   }
 
-  // await yieldToBrowser()
-
-  const rect = diagramViewport.getBoundingClientRect()
-  if (rect.width <= 0 || rect.height <= 0) {
-    console.warn('[likec4-preview] export-png: diagram has zero size', rect)
-    clearExportViewport?.()
-    return {
-      pngBytes: null,
-      exportViewKind: exportViewport.exportViewKind,
-      error: 'Diagram is not ready to export',
-    }
-  }
   try {
-    // await yieldToBrowser()
-    const width = Math.ceil(rect.width)
-    const height = Math.ceil(rect.height)
-    const ratioByWidth = Number.isFinite(maxWidth) ? maxWidth / Math.max(1, width) : Number.POSITIVE_INFINITY
-    const ratioByHeight = Number.isFinite(maxHeight) ? maxHeight / Math.max(1, height) : Number.POSITIVE_INFINITY
-    const effectivePixelRatio = Math.max(0.1, Math.min(pixelRatio, ratioByWidth, ratioByHeight))
+    // Serialize to SVG using the SVG ForeignObject backend
+    console.time('serializeWithForeignObject (PNG)')
+    const svgText = serializeWithForeignObject(element, {
+      ...metadata,
+      background: 'transparent',
+    })
+    console.timeEnd('serializeWithForeignObject (PNG)')
 
-    const options = {
-      backgroundColor: 'transparent',
-      cacheBust: false,
-      imagePlaceholder: emptyGif,
-      width,
-      height,
-      pixelRatio: effectivePixelRatio,
-    }
-    // await yieldToBrowser()
-    // use toBlob directly to avoid expensive data URL roundtrip
-    console.time('toBlob (PNG)')
-    const blob = await toBlob(diagramViewport, options)
-    console.timeEnd('toBlob (PNG)')
+    // Rasterize SVG to PNG
+    console.time('rasterizeSvg (PNG)')
+    const blob = await rasterizeSvg(svgText, metadata.logicalWidth, metadata.logicalHeight, {
+      format: 'png',
+      pixelRatio,
+      maxWidth,
+      maxHeight,
+    })
+    console.timeEnd('rasterizeSvg (PNG)')
+
     if (!blob || blob.size === 0) {
       clearExportViewport?.()
       return {
@@ -301,72 +309,70 @@ ExtensionApi.onExportPngRequest(async (params) => {
   }
 })
 
-ExtensionApi.onExportSvgRequest(async (params) => {
-  console.log('[likec4-preview] export-svg request')
+ExtensionApi.onExportJpegRequest(async (params) => {
+  console.log('[likec4-preview] export-jpeg request')
   const maxWidth = Number.isFinite(params?.maxWidth)
     ? Math.max(512, Math.floor(Number(params?.maxWidth)))
     : Number.POSITIVE_INFINITY
   const maxHeight = Number.isFinite(params?.maxHeight)
     ? Math.max(512, Math.floor(Number(params?.maxHeight)))
     : Number.POSITIVE_INFINITY
+  // quality in 0..1, default 0.92
+  const quality = Number.isFinite(params?.quality)
+    ? Math.max(0.1, Math.min(1, Number(params?.quality)))
+    : 0.92
+  const pixelRatio = 2
 
   const exportViewport = exportViewportProvider
-    ? await exportViewportProvider()
-    : { element: null, exportViewKind: null }
-  const diagramViewport = exportViewport.element
-  if (!diagramViewport) {
-    console.warn('[likec4-preview] export-svg: react-flow viewport not found')
+    ? await exportViewportProvider({ colorScheme: params?.colorScheme ?? 'inherit' })
+    : { element: null, metadata: null, exportViewKind: null }
+  const element = exportViewport.element
+  const metadata = exportViewport.metadata
+
+  if (!element || !metadata) {
+    console.warn('[likec4-preview] export-jpeg: export scene not ready')
     clearExportViewport?.()
     return {
-      svg: null,
+      jpegBytes: null,
       exportViewKind: exportViewport.exportViewKind,
       error: 'Diagram viewport not found',
     }
   }
 
-  await yieldToBrowser()
-
-  const rect = diagramViewport.getBoundingClientRect()
-  if (rect.width <= 0 || rect.height <= 0) {
-    console.warn('[likec4-preview] export-svg: diagram has zero size', rect)
-    clearExportViewport?.()
-    return {
-      svg: null,
-      exportViewKind: exportViewport.exportViewKind,
-      error: 'Diagram is not ready to export',
-    }
-  }
   try {
-    await yieldToBrowser()
-    const width = Math.ceil(rect.width)
-    const height = Math.ceil(rect.height)
+    // Serialize with solid-theme background (JPEG has no transparency)
+    console.time('serializeWithForeignObject (JPEG)')
+    const svgText = serializeWithForeignObject(element, {
+      ...metadata,
+      background: 'solid-theme',
+    })
+    console.timeEnd('serializeWithForeignObject (JPEG)')
 
-    const options = {
-      backgroundColor: 'transparent',
-      cacheBust: false,
-      imagePlaceholder: emptyGif,
-      width,
-      height,
-      pixelRatio: 1,
-    }
-    await yieldToBrowser()
-    console.time('toSvg')
-    const dataUrl = await toSvg(diagramViewport, options)
-    console.timeEnd('toSvg')
-    if (!dataUrl || !dataUrl.startsWith('data:image/svg+xml')) {
+    // Rasterize SVG to JPEG
+    console.time('rasterizeSvg (JPEG)')
+    const blob = await rasterizeSvg(svgText, metadata.logicalWidth, metadata.logicalHeight, {
+      format: 'jpeg',
+      pixelRatio,
+      maxWidth,
+      maxHeight,
+      quality,
+      backgroundColor: metadata.backgroundColor,
+    })
+    console.timeEnd('rasterizeSvg (JPEG)')
+
+    if (!blob || blob.size === 0) {
       clearExportViewport?.()
       return {
-        svg: null,
+        jpegBytes: null,
         exportViewKind: exportViewport.exportViewKind,
-        error: 'Failed to export SVG',
+        error: 'Failed to export JPEG',
       }
     }
 
-    const encoded = dataUrl.split(',')[1] ?? ''
-    const svg = applySvgMaxDimensions(decodeURIComponent(encoded), width, height, maxWidth, maxHeight)
+    const jpegBytes = new Uint8Array(await blob.arrayBuffer())
     clearExportViewport?.()
     return {
-      svg,
+      jpegBytes,
       exportViewKind: exportViewport.exportViewKind,
       error: null,
     }
@@ -374,9 +380,9 @@ ExtensionApi.onExportSvgRequest(async (params) => {
     console.error(err)
     clearExportViewport?.()
     return {
-      svg: null,
+      jpegBytes: null,
       exportViewKind: exportViewport.exportViewKind,
-      error: 'Failed to export SVG',
+      error: 'Failed to export JPEG',
     }
   }
 })

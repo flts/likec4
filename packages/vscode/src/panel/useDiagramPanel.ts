@@ -1,5 +1,6 @@
 import { invariant } from '@likec4/core'
 import type { ProjectId, ViewId } from '@likec4/core/types'
+import type { ExportColorSchemeSetting } from '@likec4/vscode-preview/protocol'
 import {
   type EffectScope,
   computed,
@@ -286,11 +287,33 @@ export const useDiagramPanel = createSingletonComposable(() => {
         deployment: null,
       }
     },
-    exportPng: async (params: { pixelRatio: number; maxWidth: number; maxHeight: number }) => {
+    exportSvg: async (params: { colorScheme: ExportColorSchemeSetting; maxWidth: number; maxHeight: number }) => {
+      if (state.participant) {
+        return await useMessenger().requestExportSvg(state.participant, {
+          projectId: projectId.value,
+          viewId: viewId.value,
+          colorScheme: params.colorScheme,
+          maxWidth: params.maxWidth,
+          maxHeight: params.maxHeight,
+        })
+      }
+      return {
+        svg: null,
+        exportViewKind: null,
+        error: 'No preview panel found',
+      }
+    },
+    exportPng: async (params: {
+      colorScheme: ExportColorSchemeSetting
+      pixelRatio: number
+      maxWidth: number
+      maxHeight: number
+    }) => {
       if (state.participant) {
         return await useMessenger().requestExportPng(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
+          colorScheme: params.colorScheme,
           pixelRatio: params.pixelRatio,
           maxWidth: params.maxWidth,
           maxHeight: params.maxHeight,
@@ -302,17 +325,24 @@ export const useDiagramPanel = createSingletonComposable(() => {
         error: 'No preview panel found',
       }
     },
-    exportSvg: async (params: { maxWidth: number; maxHeight: number }) => {
+    exportJpeg: async (params: {
+      colorScheme: ExportColorSchemeSetting
+      maxWidth: number
+      maxHeight: number
+      quality: number
+    }) => {
       if (state.participant) {
-        return await useMessenger().requestExportSvg(state.participant, {
+        return await useMessenger().requestExportJpeg(state.participant, {
           projectId: projectId.value,
           viewId: viewId.value,
+          colorScheme: params.colorScheme,
           maxWidth: params.maxWidth,
           maxHeight: params.maxHeight,
+          quality: params.quality,
         })
       }
       return {
-        svg: null,
+        jpegBytes: null,
         exportViewKind: null,
         error: 'No preview panel found',
       }

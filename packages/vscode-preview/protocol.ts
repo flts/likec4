@@ -52,9 +52,34 @@ export const FetchProjectsOverview: RequestType<never, { projectsView: LayoutedP
   method: 'fetch-projects-overview',
 }
 
+export type ExportColorSchemeSetting = 'inherit' | 'light' | 'dark'
+
+/**
+ * SVG export request.
+ * Output files should use the `.svg` extension while the MIME type is `image/svg+xml`.
+ */
+export const ExportSvg: RequestType<{
+  projectId: ProjectId
+  viewId: ViewId
+  colorScheme?: ExportColorSchemeSetting
+  maxWidth?: number
+  maxHeight?: number
+}, {
+  svg: string | null
+  exportViewKind: 'sequence' | 'deployment' | null
+  error: string | null
+}> = {
+  method: 'export-svg',
+}
+
+/**
+ * PNG export request.
+ * Output files should use the `.png` extension while the MIME type is `image/png`.
+ */
 export const ExportPng: RequestType<{
   projectId: ProjectId
   viewId: ViewId
+  colorScheme?: ExportColorSchemeSetting
   pixelRatio?: number
   maxWidth?: number
   maxHeight?: number
@@ -66,17 +91,24 @@ export const ExportPng: RequestType<{
   method: 'export-png',
 }
 
-export const ExportSvg: RequestType<{
+/**
+ * JPEG export request.
+ * Output files should use the `.jpg` extension while the MIME type is `image/jpeg`.
+ */
+export const ExportJpeg: RequestType<{
   projectId: ProjectId
   viewId: ViewId
+  colorScheme?: ExportColorSchemeSetting
   maxWidth?: number
   maxHeight?: number
+  /** Quality in range 0..1. Defaults to 0.92. */
+  quality?: number
 }, {
-  svg: string | null
+  jpegBytes: Uint8Array | null
   exportViewKind: 'sequence' | 'deployment' | null
   error: string | null
 }> = {
-  method: 'export-svg',
+  method: 'export-jpeg',
 }
 
 export type OpenViewPayload = {

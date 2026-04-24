@@ -2,13 +2,8 @@ import useTelemetry from '#useTelemetry'
 import { useDiagramPanel } from '../panel'
 import { useLanguageClient } from '../useLanguageClient'
 import { useRpc } from '../useRpc'
-import { registerExportD2OfCurrentViewCommand } from './exportD2OfCurrentView'
-import { registerExportDotOfCurrentViewCommand } from './exportDotOfCurrentView'
-import { registerExportMermaidOfCurrentViewCommand } from './exportMermaidOfCurrentView'
-import { registerExportPngOfCurrentViewCommand } from './exportPngOfCurrentView'
-import { registerExportPumlOfCurrentViewCommand } from './exportPumlOfCurrentView'
-import { registerExportSvgGraphvizOfCurrentViewCommand } from './exportSvgGraphvizOfCurrentView'
-import { registerExportSvgOfCurrentViewCommand } from './exportSvgOfCurrentView'
+import { registerExportCurrentViewCommand } from './exportCurrentView'
+import { registerExportCurrentViewQuickCommand } from './exportCurrentViewQuick'
 import { registerLocateCommand } from './locate'
 import { registerOpenPreviewCommand } from './openPreview'
 import { registerOpenProjectsOverviewCommand } from './openProjectsOverview'
@@ -41,14 +36,9 @@ export function registerCommands() {
   registerOpenProjectsOverviewCommand(deps)
   registerLocateCommand(deps)
   registerPreviewContextOpenSourceCommand(deps)
+  registerExportCurrentViewCommand(deps)
+  registerExportCurrentViewQuickCommand(deps)
   registerPrintDotOfCurrentViewCommand(deps)
-  registerExportDotOfCurrentViewCommand(deps)
-  registerExportD2OfCurrentViewCommand(deps)
-  registerExportMermaidOfCurrentViewCommand(deps)
-  registerExportPumlOfCurrentViewCommand(deps)
-  registerExportSvgGraphvizOfCurrentViewCommand(deps)
-  registerExportPngOfCurrentViewCommand(deps)
-  registerExportSvgOfCurrentViewCommand(deps)
   registerValidateLayoutCommand(deps)
   registerReloadProjectsCommand(deps)
 }

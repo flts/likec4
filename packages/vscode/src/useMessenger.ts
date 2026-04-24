@@ -2,6 +2,7 @@ import {
   type OpenViewPayload,
   BroadcastModelUpdate,
   BroadcastProjectsUpdate,
+  ExportJpeg,
   ExportPng,
   ExportSvg,
   FetchComputedModel,
@@ -122,6 +123,7 @@ export const useMessenger = createSingletonComposable(() => {
     requestGetLastClickedNode: sendRequest(GetLastClickedNode),
     requestExportPng: sendRequest(ExportPng),
     requestExportSvg: sendRequest(ExportSvg),
+    requestExportJpeg: sendRequest(ExportJpeg),
   }
 
   return {
