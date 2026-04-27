@@ -4,5 +4,4 @@
 ---
 
 Add current view export commands in the VS Code extension for SVG, PNG, JPEG, Mermaid, D2, PlantUML, DOT, and Graphviz based SVG.
-
-Add quick export and image export settings for color scheme, size limits, PNG pixel ratio, and JPEG quality.
+Fix https://github.com/likec4/likec4/issues/2286

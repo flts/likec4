@@ -131,7 +131,7 @@ async function pickPngPixelRatio(currentValue?: number) {
     items,
     {
       canPickMany: false,
-      title: 'PNG quality',
+      title: 'PNG pixel ratio',
       placeHolder: 'Select PNG pixel ratio',
       ...(activeItem ? { activeItem } : {}),
     },

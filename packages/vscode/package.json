@@ -231,13 +231,13 @@
           "type": "number",
           "default": 8192,
           "minimum": 512,
-          "description": "Maximum export output width in pixels (applies to PNG and SVG exports). Large diagrams may be downscaled to stay within this limit."
+          "description": "Maximum export output width in pixels (applies to PNG, JPEG and SVG exports). Large diagrams may be downscaled to stay within this limit."
         },
         "likec4.export.imageMaxHeight": {
           "type": "number",
           "default": 8192,
           "minimum": 512,
-          "description": "Maximum export output height in pixels (applies to PNG and SVG exports). Large diagrams may be downscaled to stay within this limit."
+          "description": "Maximum export output height in pixels (applies to PNG, JPEG and SVG exports). Large diagrams may be downscaled to stay within this limit."
         }
       }
     },

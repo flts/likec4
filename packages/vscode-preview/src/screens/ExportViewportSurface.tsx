@@ -7,7 +7,6 @@ import type {
   ExportSceneBackground,
   ExportSceneColorScheme,
   ExportSceneMetadata,
-  ExportSceneMode,
 } from '../export/exportTypes'
 import { waitForExportSceneReady } from '../export/waitForExportSceneReady'
 import { theme } from '../theme'
@@ -60,7 +59,6 @@ export type ExportViewportProviderPayload = {
 type ExportViewportControllerState = {
   renderExportViewport: boolean
   exportDynamicViewVariant: DynamicViewDisplayVariant
-  exportSceneMode: ExportSceneMode
   exportColorScheme: ExportColorSchemeSetting
   requestId: number
 }
@@ -69,7 +67,6 @@ type ExportViewportControllerAction =
   | {
     type: 'show-export-viewport'
     variant: DynamicViewDisplayVariant
-    mode: ExportSceneMode
     colorScheme: ExportColorSchemeSetting
   }
   | {
@@ -85,7 +82,6 @@ function exportViewportControllerReducer(
       return {
         renderExportViewport: true,
         exportDynamicViewVariant: action.variant,
-        exportSceneMode: action.mode,
         exportColorScheme: action.colorScheme,
         requestId: state.requestId + 1,
       }
@@ -131,12 +127,11 @@ export function useExportViewportProvider({
 }) {
   const resolverRef = useRef<((payload: ExportViewportProviderPayload) => void) | null>(null)
   const [
-    { renderExportViewport, exportDynamicViewVariant, exportSceneMode, exportColorScheme, requestId },
+    { renderExportViewport, exportDynamicViewVariant, exportColorScheme, requestId },
     dispatch,
   ] = useReducer(exportViewportControllerReducer, {
     renderExportViewport: false,
     exportDynamicViewVariant: 'diagram' as DynamicViewDisplayVariant,
-    exportSceneMode: 'diagram' as ExportSceneMode,
     exportColorScheme: 'inherit' as ExportColorSchemeSetting,
     requestId: 0,
   })
@@ -169,7 +164,6 @@ export function useExportViewportProvider({
         dispatch({
           type: 'show-export-viewport',
           variant: currentDynamicViewVariantRef.current,
-          mode: 'diagram',
           colorScheme: params?.colorScheme ?? 'inherit',
         })
       })
@@ -190,7 +184,6 @@ export function useExportViewportProvider({
   return {
     renderExportViewport,
     requestId,
-    exportSceneMode,
     exportColorScheme,
     exportDynamicVariant: viewType === 'dynamic' ? exportDynamicViewVariant : undefined,
     onSurfaceReady,
@@ -202,14 +195,12 @@ export function ExportViewportSurface({
   requestId,
   dynamicVariant,
   colorScheme,
-  mode,
   onReady,
 }: {
   view: DiagramView
   requestId: number
   dynamicVariant: 'diagram' | 'sequence' | undefined
   colorScheme: ExportColorSchemeSetting
-  mode: ExportSceneMode
   onReady: (payload: ExportViewportSurfaceReadyPayload) => void
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -281,7 +272,6 @@ export function ExportViewportSurface({
         const metadata: ExportSceneMetadata = {
           logicalWidth,
           logicalHeight,
-          mode,
           colorScheme: resolvedColorScheme,
           background,
           backgroundColor: resolveThemeBackgroundColor(exportElement, resolvedColorScheme),
@@ -294,7 +284,6 @@ export function ExportViewportSurface({
         const metadata: ExportSceneMetadata = {
           logicalWidth,
           logicalHeight,
-          mode,
           colorScheme: resolvedColorScheme,
           background,
           backgroundColor: resolveThemeBackgroundColor(exportElement, resolvedColorScheme),
@@ -308,7 +297,6 @@ export function ExportViewportSurface({
     bounds.y,
     logicalWidth,
     logicalHeight,
-    mode,
     onReady,
     resolvedColorScheme,
   ])
@@ -318,7 +306,6 @@ export function ExportViewportSurface({
     <div
       ref={rootRef}
       style={surfaceStyle}
-      data-export-scene-mode={mode}
       data-testid="vscode-preview-export-surface"
     >
       <MantineProvider
