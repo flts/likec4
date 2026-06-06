@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: MIT
+//
+// Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//
+// Portions of this file have been modified by NVIDIA CORPORATION & AFFILIATES.
+
 import { defineConfig, devices } from '@playwright/test'
 import { isCI } from 'std-env'
 
@@ -13,7 +19,7 @@ export default defineConfig({
   forbidOnly: isCI,
 
   // Timeout for each test
-  timeout: 15 * 1000,
+  timeout: 20 * 1000,
 
   maxFailures: 5,
 
@@ -44,7 +50,7 @@ export default defineConfig({
       scale: 'device',
       animations: 'disabled',
       // Allow small pixel diff (e.g. fonts/layout flakiness on CI)
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: 0.01,
     },
   },
 
@@ -57,8 +63,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm likec4 start --verbose --no-react-hmr --no-build-webcomponent',
-    port: 5173,
+    command: 'pnpm build-and-preview',
+    port: 62001,
     stdout: 'pipe',
     timeout: 60 * 1000,
     env: {

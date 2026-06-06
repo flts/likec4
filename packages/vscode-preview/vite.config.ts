@@ -1,5 +1,7 @@
+import postcssPanda from '@pandacss/dev/postcss'
+import babel from '@rolldown/plugin-babel'
 import react from '@vitejs/plugin-react'
-import { readFileSync } from 'node:fs'
+import { reactCompilerPreset } from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 
@@ -13,16 +15,23 @@ export default defineConfig(({ mode }) => {
       extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.jsx', '.json'],
       alias: {
         '@tabler/icons-react': '@tabler/icons-react/dist/esm/icons/index.mjs',
-        '@likec4/diagram': resolve('../diagram/src/index.ts'),
       },
     },
+    mode: isDev ? 'development' : 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
     },
-    esbuild: {
-      jsx: 'automatic',
-      jsxDev: false,
-      tsconfigRaw: readFileSync('tsconfig.src.json', 'utf-8'),
+    css: {
+      postcss: {
+        plugins: [
+          postcssPanda() as any,
+        ],
+      },
+    },
+    oxc: {
+      jsx: {
+        development: false,
+      },
     },
     build: {
       outDir: isDev ? resolve(__dirname, '..', 'vscode', 'dist', 'preview') : 'dist',
@@ -34,27 +43,16 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 20000,
       assetsDir: '',
       modulePreload: false,
-      commonjsOptions: {
-        defaultIsModuleExports: 'auto',
-        requireReturnsDefault: 'auto',
-        extensions: ['.mjs', '.js'],
-        transformMixedEsModules: true,
-        ignoreTryCatch: 'remove',
-      },
-      rollupOptions: {
-        treeshake: {
-          preset: 'recommended',
-        },
+      rolldownOptions: {
+        tsconfig: 'tsconfig.src.json',
         input: [
-          './index.html',
-          './src/fonts.css',
-          './src/index.css',
+          'index.html',
+          'src/fonts.css',
+          'src/index.css',
         ],
         output: {
-          hoistTransitiveImports: false,
-          compact: true,
           entryFileNames: `[name].js`,
-          assetFileNames: `[name].[ext]`,
+          assetFileNames: `[name][extname]`,
         },
         external: [
           'vscode',
@@ -64,12 +62,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
-      react({
-        babel: {
-          plugins: [
-            ['babel-plugin-react-compiler', {}],
-          ],
-        },
+      react(),
+      babel({
+        presets: [reactCompilerPreset()],
       }),
     ],
   }

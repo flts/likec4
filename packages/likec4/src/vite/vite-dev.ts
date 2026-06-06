@@ -1,6 +1,3 @@
-import type { LikeC4ViteConfig } from '#vite/config-app'
-import { viteConfig } from '#vite/config-app'
-import { viteWebcomponentConfig } from '#vite/config-webcomponent'
 import { loggable } from '@likec4/log'
 import getPort, { portNumbers } from 'get-port'
 import isInsideContainer from 'is-inside-container'
@@ -12,7 +9,49 @@ import k from 'tinyrainbow'
 import type { SetOptional } from 'type-fest'
 import type { ViteDevServer } from 'vite'
 import { build, createServer } from 'vite'
-import { mkTempPublicDir } from './utils'
+import type { LikeC4ViteConfig } from './config-app'
+import { viteConfig } from './config-app'
+import { viteWebcomponentConfig } from './config-webcomponent'
+import { copyUserPublicDir, mkTempPublicDir } from './utils'
+
+/**
+ * Validates that a port is a valid integer between 1 and 65535.
+ * Throws an error if the port is invalid.
+ *
+ * @param port - The port number to validate
+ * @param source - The source of the port (e.g., 'explicitPort', 'HMR_PORT')
+ */
+function validatePort(port: number, source: string): void {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`Invalid HMR port from ${source}: ${port}. Must be an integer between 1 and 65535.`)
+  }
+}
+
+/**
+ * Resolves the HMR WebSocket port to use.
+ * Priority: explicit argument > HMR_PORT env var > auto-discovered from 24678–24690.
+ * When HMR is disabled, returns `undefined`.
+ *
+ * Exported for testing.
+ */
+export async function resolveHmrPort(
+  explicitPort: number | undefined,
+  hmrEnabled: boolean,
+): Promise<number | undefined> {
+  if (!hmrEnabled) {
+    return undefined
+  }
+  if (explicitPort !== undefined) {
+    validatePort(explicitPort, 'explicitPort')
+    return explicitPort
+  }
+  if (env['HMR_PORT']) {
+    const envPort = Number.parseInt(env['HMR_PORT'], 10)
+    validatePort(envPort, 'HMR_PORT')
+    return envPort
+  }
+  return getPort({ port: portNumbers(24678, 24690) })
+}
 
 type Config = SetOptional<LikeC4ViteConfig, 'likec4AssetsDir'> & {
   buildWebcomponent?: boolean
@@ -20,10 +59,16 @@ type Config = SetOptional<LikeC4ViteConfig, 'likec4AssetsDir'> & {
   hmr?: boolean
   listen?: string | undefined
   port?: number | undefined
+  hmrPort?: number | undefined
+  /**
+   * Hostnames allowed to respond to (Vite `server.allowedHosts`).
+   * When omitted, all hosts are allowed.
+   */
+  allowedHosts?: string[] | undefined
 }
 
 export async function viteDev({
-  buildWebcomponent = true,
+  buildWebcomponent = false,
   hmr = true,
   webcomponentPrefix = 'likec4',
   title,
@@ -32,6 +77,9 @@ export async function viteDev({
   openBrowser,
   listen,
   port,
+  hmrPort,
+  userPublicDir,
+  allowedHosts,
   ...cfg
 }: Config): Promise<ViteDevServer> {
   likec4AssetsDir ??= await mkdtemp(join(tmpdir(), '.likec4-assets-'))
@@ -59,21 +107,21 @@ export async function viteDev({
       ],
     })
   }
-  let hmrPort = 24678
-
   const publicDir = await mkTempPublicDir()
+  if (userPublicDir) {
+    await copyUserPublicDir(userPublicDir, publicDir)
+  }
 
   const host = listen ?? (isInsideContainer() ? '0.0.0.0' : 'localhost')
 
-  if (hmr) {
-    hmrPort = await getPort({
-      port: portNumbers(24678, 24690),
-    })
-    logger.info(`Enabling HMR: localhost:${hmrPort}`)
+  const resolvedHmrPort = await resolveHmrPort(hmrPort, hmr)
+  if (hmr && resolvedHmrPort !== undefined) {
+    const source = hmrPort ? ' (explicit)' : env['HMR_PORT'] ? ' (env)' : ' (auto-discovered)'
+    logger.info(`Enabling HMR: localhost:${resolvedHmrPort}${source}`)
     if (isInsideContainer()) {
-      logger.info(k.yellow(`ensure port ${hmrPort} is published from container`))
+      logger.info(k.yellow(`ensure port ${resolvedHmrPort} is published from container`))
     }
-  } else {
+  } else if (!hmr) {
     logger.info(`Disabling HMR`)
   }
 
@@ -87,18 +135,18 @@ export async function viteDev({
       : config.define,
     mode: hmr ? 'development' : config.mode,
     publicDir,
+    optimizeDeps: {
+      force: true,
+    },
     server: {
       host,
-      // TODO: temprorary enable access to any host
-      // This is not recommended as it can be a security risk - https://vite.dev/config/server-options#server-allowedhosts
-      // Enabled after request in discord support just to check if it solves the problem
-      allowedHosts: true,
+      allowedHosts: allowedHosts && allowedHosts.length > 0 ? allowedHosts : true,
       port,
       hmr: hmr && {
         overlay: true,
         // needed for hmr to work over network aka WSL2
         // host,
-        port: hmrPort,
+        ...(resolvedHmrPort !== undefined ? { port: resolvedHmrPort } : {}),
       },
       fs: {
         strict: false,
@@ -108,23 +156,20 @@ export async function viteDev({
   })
 
   if (buildWebcomponent) {
-    logger.info(`Building webcomponent`) // don't wait, we want to start the server asap
-    viteWebcomponentConfig({
+    const webcomponentConfig = viteWebcomponentConfig({
       webcomponentPrefix,
       languageServices: languageServices,
       outDir: publicDir,
       base: config.base,
     })
-      .then(webcomponentConfig =>
-        build({
-          ...webcomponentConfig,
-          logLevel: 'warn',
-        })
-      )
-      .catch(err => {
-        logger.warn(loggable(err))
-        logger.warn('webcomponent build failed, ignoring error and continue')
-      })
+    logger.info(`Building webcomponent`) // don't wait, we want to start the server asap
+    build({
+      ...webcomponentConfig,
+      logLevel: 'warn',
+    }).catch(err => {
+      logger.warn(loggable(err))
+      logger.warn('webcomponent build failed, ignoring error and continue')
+    })
   } else {
     logger.info(`Skip webcomponent build`)
   }

@@ -1,5 +1,21 @@
 # @likec4/config
 
+## 1.57.0
+
+### Patch Changes
+
+- Updated dependencies [[`311b93d`](https://github.com/likec4/likec4/commit/311b93de360556b9583b901c5ad3d6692b9c9f03), [`35ba3f6`](https://github.com/likec4/likec4/commit/35ba3f637e45fc1072646f646b3442b3235cc29d)]:
+  - @likec4/core@1.57.0
+  - @likec4/log@1.57.0
+
+## 1.56.0
+
+### Patch Changes
+
+- Updated dependencies [[`af34764`](https://github.com/likec4/likec4/commit/af3476421fd8938a897240ad6fd1c70068d1e070), [`ace5b2e`](https://github.com/likec4/likec4/commit/ace5b2e5cd261f47bd2e93b6f495e2122ceef16d), [`5f46082`](https://github.com/likec4/likec4/commit/5f460821526d851ef3bbf8be5a2bd749c2df6a8a)]:
+  - @likec4/log@1.56.0
+  - @likec4/core@1.56.0
+
 ## 1.55.1
 
 ### Patch Changes

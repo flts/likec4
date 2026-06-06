@@ -5,10 +5,9 @@
 //
 // Portions of this file have been modified by NVIDIA CORPORATION & AFFILIATES.
 
-import { DEV } from 'esm-env'
 import isInsideContainer from 'is-inside-container'
 import { resolve } from 'node:path'
-import { env } from 'std-env'
+import { env, isDevelopment } from 'std-env'
 import type { Options, PositionalOptions } from 'yargs'
 
 export const path = {
@@ -85,6 +84,22 @@ export const outputSingleFile = {
   desc: 'outputs a single self-contained HTML file with all required resources inlined',
 } as const satisfies Options
 
+export const publicDir = {
+  alias: 'public-dir',
+  string: true,
+  desc: 'directory whose files are copied to the output as-is (Vite publicDir, e.g. images linked from views)',
+  normalize: true,
+  nargs: 1,
+  coerce: resolve,
+} as const satisfies Options
+
+export const allowedHost = {
+  array: true,
+  string: true,
+  desc: 'hostname allowed to respond to (Vite server.allowedHosts); can be repeated. Defaults to allowing all hosts.',
+  requiresArg: true,
+} as const satisfies Options
+
 export const listen = {
   alias: 'l',
   string: true,
@@ -102,6 +117,13 @@ export const listen = {
 export const port = {
   number: true,
   desc: 'port number for the dev server (default is 5173, or PORT environment variable)',
+  nargs: 1,
+} as const satisfies Options
+
+export const hmrPort = {
+  number: true,
+  desc:
+    'port number for the HMR WebSocket server (default is auto-discovered from 24678-24690, or HMR_PORT environment variable)',
   nargs: 1,
 } as const satisfies Options
 
@@ -126,4 +148,4 @@ export const verbose = {
   conflicts: ['log-level'],
 } as const satisfies Options
 
-export const verboseLogLevel = DEV ? 'trace' : 'debug' as const
+export const verboseLogLevel = isDevelopment ? 'trace' : 'debug' as const

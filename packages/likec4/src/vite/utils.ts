@@ -1,6 +1,6 @@
 import { rootLogger } from '@likec4/log'
-import { existsSync } from 'node:fs'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { existsSync, statSync } from 'node:fs'
+import { cp, mkdtemp, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { cwd } from 'node:process'
@@ -12,27 +12,6 @@ import { createLikeC4Logger } from '../logger'
 export const viteLogger = createLikeC4Logger('vite')
 
 const _dirname = dirname(fileURLToPath(import.meta.url))
-
-const banner = `
-/* prettier-ignore-start */
-/* eslint-disable */
-
-/******************************************************************************
- * This file was generated
- * DO NOT EDIT MANUALLY!
- ******************************************************************************/
-
-`.trimStart()
-
-const footer = `
-
-/* prettier-ignore-end */
-`
-
-export const JsBanners = {
-  banner,
-  footer,
-}
 
 /** Resolves the likec4 package root by walking up from current file. */
 export function findPkgRoot() {
@@ -75,6 +54,25 @@ export function relativeToCwd(path: string) {
 }
 
 /**
- * Adjust chunk size warning limit (in kB).
+ * Copies the contents of a user-provided directory into the temporary publicDir
+ * (the directory Vite uses to serve / copy static assets). The directory must
+ * exist and be a directory — otherwise an error is thrown so the user notices
+ * a typo on the CLI instead of silently getting no assets.
+ *
+ * Returns the top-level entry names that were copied so callers can preserve
+ * them across post-build cleanup (see single-file build).
  */
-export const chunkSizeWarningLimit = 10_000
+export async function copyUserPublicDir(
+  userPublicDir: string,
+  destPublicDir: string,
+): Promise<string[]> {
+  if (!existsSync(userPublicDir)) {
+    throw new Error(`--public directory does not exist: ${userPublicDir}`)
+  }
+  if (!statSync(userPublicDir).isDirectory()) {
+    throw new Error(`--public path is not a directory: ${userPublicDir}`)
+  }
+  const entries = await readdir(userPublicDir)
+  await cp(userPublicDir, destPublicDir, { recursive: true, errorOnExist: false })
+  return entries
+}

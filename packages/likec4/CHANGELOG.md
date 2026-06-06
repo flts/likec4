@@ -1,5 +1,62 @@
 # likec4
 
+## 1.57.0
+
+### Minor Changes
+
+- [#2968](https://github.com/likec4/likec4/pull/2968) [`590864d`](https://github.com/likec4/likec4/commit/590864db3d43c3657eb5736831f95643245cd600) Thanks [@farhan523](https://github.com/farhan523)! - Add `--public` option (alias `--public-dir`) to `likec4 build` and `likec4 start` for specifying a directory that Vite serves and copies as-is into the output (Vite's `publicDir`). Files in this directory are preserved in the build output, including when `--output-single-file` is used. Resolves [#1941](https://github.com/likec4/likec4/issues/1941).
+
+- [#2935](https://github.com/likec4/likec4/pull/2935) [`35ba3f6`](https://github.com/likec4/likec4/commit/35ba3f637e45fc1072646f646b3442b3235cc29d) Thanks [@Kiiv](https://github.com/Kiiv)! - feat: add `includeAncestors` property to deployment views to include all ancestors of visible nodes. Fix https://github.com/likec4/likec4/issues/1483
+
+### Patch Changes
+
+- [#2971](https://github.com/likec4/likec4/pull/2971) [`3e0d071`](https://github.com/likec4/likec4/commit/3e0d071a7b080fac7f19656f52dabde5338a73d3) Thanks [@farhan523](https://github.com/farhan523)! - Add `--allowed-host` option to `likec4 start` (`serve` / `dev`) for scoping which hostnames are allowed to access the dev server (Vite's `server.allowedHosts`). Can be repeated. When omitted, all hosts are allowed (current behaviour). Resolves [#1650](https://github.com/likec4/likec4/issues/1650).
+
+- [#2950](https://github.com/likec4/likec4/pull/2950) [`dcbf674`](https://github.com/likec4/likec4/commit/dcbf6745b9804be7de82a88ed7a78c19986c524d) Thanks [@ckeller42](https://github.com/ckeller42)! - Add `--description` to PNG and JPEG exports to include the view title and Markdown description in generated images.
+
+- [#2950](https://github.com/likec4/likec4/pull/2950) [`dcbf674`](https://github.com/likec4/likec4/commit/dcbf6745b9804be7de82a88ed7a78c19986c524d) Thanks [@ckeller42](https://github.com/ckeller42)! - Add `--notation` to PNG and JPEG exports to include non-overlapping view notation in generated images.
+
+- [#2952](https://github.com/likec4/likec4/pull/2952) [`0a1b751`](https://github.com/likec4/likec4/commit/0a1b75166af24dc1024209b276cc984d428b751e) Thanks [@kieronlanning](https://github.com/kieronlanning)! - Fix single-project overview page always showing the CLI `--title` value instead of the `title` from `likec4.config.json`
+
+- [#2969](https://github.com/likec4/likec4/pull/2969) [`116f482`](https://github.com/likec4/likec4/commit/116f482daca0c09c3ae25018a82c06bb0cee355e) Thanks [@ckeller42](https://github.com/ckeller42)! - Fixes [#2962](https://github.com/likec4/likec4/issues/2962) by showing relationship popovers in static embedded views generated with `likec4 build`.
+
+- [`1540465`](https://github.com/likec4/likec4/commit/1540465bc6a5b777d9611e08eba7a015aaa81bf6) Thanks [@davydkov](https://github.com/davydkov)! - Fix css bundling for react/webcomponents (when rendered in shadow root)
+
+- [#2976](https://github.com/likec4/likec4/pull/2976) [`783155b`](https://github.com/likec4/likec4/commit/783155bba49ec60485af2c7f420fbb28e893955c) Thanks [@davydkov](https://github.com/davydkov)! - Drop the `react-shadow` dependency and inline shadow-root rendering directly. Mark `use-sync-external-store` as external to avoid duplicate React internals.
+
+- [#2947](https://github.com/likec4/likec4/pull/2947) [`3726863`](https://github.com/likec4/likec4/commit/3726863ba5cbd3b434f50a7f8f90ccb436c76b03) Thanks [@kieronlanning](https://github.com/kieronlanning)! - Add `--hmr-port` option to the `start` CLI command for specifying the HMR WebSocket port.
+
+  The port can also be set via the `HMR_PORT` environment variable. If neither is provided, a free port is auto-discovered in the range 24678–24690.
+
+- [`2e41ccf`](https://github.com/likec4/likec4/commit/2e41ccf24ad31d40c69cb545f8438db08f40ec89) Thanks [@davydkov](https://github.com/davydkov)! - Fix validation of `browser` property in webcomponent (accepts string values "true"/"false"/"yes"/"no")
+
+  Closes [#2936](https://github.com/likec4/likec4/issues/2936)
+
+- [#2976](https://github.com/likec4/likec4/pull/2976) [`783155b`](https://github.com/likec4/likec4/commit/783155bba49ec60485af2c7f420fbb28e893955c) Thanks [@davydkov](https://github.com/davydkov)! - Chore (contributors): upgrade to pnpm 11.
+
+  `packageManager` is now `pnpm@11.2.2` and `.tool-versions` was bumped accordingly. Workspace overrides, `allowBuilds`, and `patchedDependencies` were moved from the root `package.json` into `pnpm-workspace.yaml` (pnpm 11 layout).
+
+- Updated dependencies [[`311b93d`](https://github.com/likec4/likec4/commit/311b93de360556b9583b901c5ad3d6692b9c9f03), [`35ba3f6`](https://github.com/likec4/likec4/commit/35ba3f637e45fc1072646f646b3442b3235cc29d)]:
+  - @likec4/core@1.57.0
+  - @likec4/icons@1.46.4
+
+## 1.56.0
+
+### Patch Changes
+
+- [#2904](https://github.com/likec4/likec4/pull/2904) [`935f6bb`](https://github.com/likec4/likec4/commit/935f6bb3fc42b88669bd8af65947a201f8e3d490) Thanks [@davydkov](https://github.com/davydkov)! - Support applying view changes without LSP connection (e.g. in vite-plugin/CLI mode)
+
+- [`ab726ed`](https://github.com/likec4/likec4/commit/ab726eda9ec87b75fd72e056fb5f89ef78fe71e0) Thanks [@davydkov](https://github.com/davydkov)! - Extract web app into a separate `@likec4/spa` package, decoupling it from the CLI for better modularity, faster builds and smaller bundles — resolves [#2689](https://github.com/likec4/likec4/issues/2689)
+
+  The new package also improves DX by eliminating the dependency "magic" that existed in the CLI package
+
+- [#2906](https://github.com/likec4/likec4/pull/2906) [`af34764`](https://github.com/likec4/likec4/commit/af3476421fd8938a897240ad6fd1c70068d1e070) Thanks [@davydkov](https://github.com/davydkov)! - Load icons on demand from CDN instead of bundling all icon components, reducing bundle size. Icons are resolved from local cache, then `@likec4/icons` package, then fetched from `icons.like-c4.dev`.
+
+- [#2921](https://github.com/likec4/likec4/pull/2921) [`5f46082`](https://github.com/likec4/likec4/commit/5f460821526d851ef3bbf8be5a2bd749c2df6a8a) Thanks [@davydkov](https://github.com/davydkov)! - Update Mantine to 9.1.0. The `light` variant of Buttons, Alerts, and ActionIcons now uses solid colors instead of transparency.
+
+- Updated dependencies [[`ace5b2e`](https://github.com/likec4/likec4/commit/ace5b2e5cd261f47bd2e93b6f495e2122ceef16d), [`5f46082`](https://github.com/likec4/likec4/commit/5f460821526d851ef3bbf8be5a2bd749c2df6a8a)]:
+  - @likec4/core@1.56.0
+
 ## 1.55.1
 
 ### Patch Changes

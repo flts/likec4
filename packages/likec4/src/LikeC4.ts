@@ -33,12 +33,6 @@ export type LikeC4Options = {
   graphviz?: 'wasm' | 'binary'
 
   /**
-   * Whether to start MCP server
-   * @default false
-   */
-  mcp?: false | 'stdio' | { port: number }
-
-  /**
    * Whether to watch for changes in the workspace.
    * @default false
    */
@@ -63,7 +57,7 @@ export namespace LikeC4 {
           ...opts,
           configureLogger,
         }),
-        { configureLogger: 'console' },
+        { configureLogger: 'console' as const },
       ),
     )
   }
@@ -81,7 +75,7 @@ export namespace LikeC4 {
           ...opts,
           configureLogger,
         }),
-        { configureLogger: 'console' },
+        { configureLogger: 'console' as const },
       ),
     )
   }

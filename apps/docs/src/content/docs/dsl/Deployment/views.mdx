@@ -68,14 +68,17 @@ But they refer to deployment nodes and instances.
 </Aside>
 
 ### Filtering
-Filtering in deployment views use the same principles as in normal views but takes into account deployment nodes, relations and tags defined in deployment model.
+Filtering in deployment views use the same principles as in normal views but takes into account deployment nodes, relations, tags and metadata defined in deployment model.
 When condition on element is checked the following rules are applied:
-- For a deployment instances tags are combined from tags defined in model and tags defined in deployment model
+- For deployment instances, tags are combined from tags defined in model and tags defined in deployment model
 - For a child of deployment instance the tags defined on child in model are used
 - For a deployment node the tags defined in deployment model are used
-- For a deployment instances the kind of the model element is used
+- For deployment instances, the kind of the model element is used
 - For a child of deployment instance the kind of this child is used
 - For a deployment node the kind of this deployment node is used
+- For deployment instances, metadata defined in deployment model replaces metadata from the model element
+- For relationship endpoints, `source.metadata.*` and `target.metadata.*` use the same deployed instance metadata rules
+- For deployment nodes, metadata defined in deployment model is used
 - Tags are not inherited from parent nodes/elements
 
 ```likec4
@@ -125,6 +128,102 @@ views {
   }
 }
 ```
+
+Metadata predicates can be used with `include` and `exclude` as well:
+
+```likec4
+deployment {
+  environment prod {
+    instanceOf backend {
+      metadata {
+        zone 'public'
+      }
+    }
+    instanceOf database {
+      metadata {
+        zone 'restricted'
+      }
+    }
+  }
+}
+
+views {
+  deployment view prod {
+    include * -> *
+    exclude * -> *
+      where target.metadata.zone is "restricted"
+  }
+}
+```
+
+### Include ancestors
+
+Sometimes, it's useful to visualize exactly how elements are deployed. In this case, you can use
+the `includeAncestors` attribute on a deployment view.
+
+The purpose of this attribute is to force all ancestors of already visible elements to show in the final diagram. 
+It will not affect the visible relationships. It's just a representation preference allowing to view how each relevant elements are deployed.
+
+```likec4
+specification {
+  element service
+
+  deploymentNode hypervisor {
+    style {
+      color green
+    }
+  }
+  deploymentNode vm {
+    style {
+      color red
+    }
+  }
+  deploymentNode app_server {
+    style {
+      color sky
+    }
+  }
+}
+
+model {
+  svc1 = service
+  svc2 = service
+
+  svc1 -> svc2
+}
+
+deployment {
+  hyp1 = hypervisor {
+    vm = vm {
+      tomcat1 = app_server "tomcat" {
+        instanceOf svc1
+      }
+    }
+  }
+  hyp2 = hypervisor {
+    vm = vm {
+      tomcat2 = app_server "tomcat" {
+        instanceOf svc2
+      }
+    }
+  }
+}
+
+views {
+  view index {
+    title 'Landscape'
+    include *
+  }
+
+  deployment view ancestors_test {
+    includeAncestors: true
+
+    include hyp1.tomcat1.svc1
+    include hyp2.tomcat2.svc2
+  }
+}
+```
+
 
 <br/>
 <br/>

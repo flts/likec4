@@ -1,4 +1,3 @@
-import { viteWebcomponentConfig } from '#vite/config-webcomponent'
 import { fromWorkspace } from '@likec4/language-services/node'
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, rm, stat } from 'node:fs/promises'
@@ -9,6 +8,7 @@ import stripIndent from 'strip-indent'
 import k from 'tinyrainbow'
 import { build } from 'vite'
 import { boxen, createLikeC4Logger, startTimer } from '../../../logger'
+import { viteWebcomponentConfig } from '../../../vite/config-webcomponent'
 import { mkTempPublicDir } from '../../../vite/utils'
 import { ensureReact } from '../../ensure-libs'
 import { ensureProject } from '../../utils'
@@ -87,7 +87,7 @@ export async function webcomponentHandler({
   const publicDir = await mkTempPublicDir()
   logger.debug(`${k.dim('created temp public')} ${publicDir}`)
 
-  const webcomponentConfig = await viteWebcomponentConfig({
+  const webcomponentConfig = viteWebcomponentConfig({
     languageServices,
     outDir: publicDir,
     filename: filename,

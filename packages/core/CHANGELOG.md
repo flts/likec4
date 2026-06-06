@@ -1,5 +1,23 @@
 # @likec4/core
 
+## 1.57.0
+
+### Minor Changes
+
+- [#2939](https://github.com/likec4/likec4/pull/2939) [`311b93d`](https://github.com/likec4/likec4/commit/311b93de360556b9583b901c5ad3d6692b9c9f03) Thanks [@galuszkak](https://github.com/galuszkak)! - Support expanding merged relationships into separate edges with the `multiple` flag. Set `multiple true` on a relationship kind in `specification`, or per-view via `with { multiple true }`, to show each relationship as its own edge with its own label instead of merging them into a single `[...]` edge. Resolves [#663](https://github.com/likec4/likec4/issues/663).
+
+- [#2935](https://github.com/likec4/likec4/pull/2935) [`35ba3f6`](https://github.com/likec4/likec4/commit/35ba3f637e45fc1072646f646b3442b3235cc29d) Thanks [@Kiiv](https://github.com/Kiiv)! - feat: add `includeAncestors` property to deployment views to include all ancestors of visible nodes. Fix https://github.com/likec4/likec4/issues/1483
+
+## 1.56.0
+
+### Minor Changes
+
+- [#2912](https://github.com/likec4/likec4/pull/2912) [`ace5b2e`](https://github.com/likec4/likec4/commit/ace5b2e5cd261f47bd2e93b6f495e2122ceef16d) Thanks [@Kiiv](https://github.com/Kiiv)! - Improve color palette used for element rendering to be more accurate with the color specified by the user. Fix https://github.com/likec4/likec4/issues/2101
+
+### Patch Changes
+
+- [#2921](https://github.com/likec4/likec4/pull/2921) [`5f46082`](https://github.com/likec4/likec4/commit/5f460821526d851ef3bbf8be5a2bd749c2df6a8a) Thanks [@davydkov](https://github.com/davydkov)! - Update Mantine to 9.1.0. The `light` variant of Buttons, Alerts, and ActionIcons now uses solid colors instead of transparency.
+
 ## 1.55.1
 
 ## 1.55.0

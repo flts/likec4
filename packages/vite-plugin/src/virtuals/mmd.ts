@@ -1,6 +1,7 @@
 import type { LikeC4Model } from '@likec4/core/model'
 import { generateMermaid } from '@likec4/generators'
 import { CompositeGeneratorNode, expandToNode, joinToNode, NL, toString } from 'langium/generate'
+import { logGenerating } from '../logger'
 import { type ProjectVirtualModule, generateCombinedProjects, generateMatches, k } from './_shared'
 import { hardenJsonStringLiteralForEmbeddedScript } from './hardenJsonStringLiteralForEmbeddedScript'
 
@@ -13,7 +14,7 @@ function code(model: LikeC4Model.Computed) {
      ******************************************************************************/
     /* eslint-disable */
 
-    export function mmdSource(viewId) {
+    export let mmdSource = (viewId) => {
       switch (viewId) {
   `
     .appendNewLine()
@@ -47,13 +48,16 @@ function code(model: LikeC4Model.Computed) {
   return toString(out)
 }
 
-export const projectMmdSourcesModule = {
+export const projectMmdSourcesModule: ProjectVirtualModule = {
   ...generateMatches('mmd'),
-  async load({ likec4, project, logger }) {
-    logger.info(k.dim(`generating virtual:likec4/mmd/${project.id}`))
+  async load({ likec4, project }) {
+    logGenerating('mmd', project.id)
     const model = await likec4.computedModel(project.id)
-    return code(model)
+    return {
+      code: code(model),
+      moduleType: 'js',
+    }
   },
-} satisfies ProjectVirtualModule
+}
 
 export const mmdModule = generateCombinedProjects('mmd', 'loadMmdSources')

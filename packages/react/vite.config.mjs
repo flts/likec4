@@ -1,26 +1,33 @@
-import pandacss from '@likec4/styles/postcss'
+import postcssPanda from '@pandacss/dev/postcss'
+import babel from '@rolldown/plugin-babel'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 import process from 'node:process'
+import { esmExternalRequirePlugin } from 'rolldown/plugins'
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
+import packageJson from './package.json' with { type: 'json' }
 
-const _rewriteRootSelector = {
+/**
+ * @type {import('postcss').AcceptedPlugin}
+ */
+const rewriteRootSelector = {
   postcssPlugin: 'postcss-rewrite-root',
   Once(css) {
     css.walkRules((rule) => {
+      let updated = false
       let updatedSelectors = []
       for (let val of rule.selectors) {
-        if (val.trim() === ':root') {
-          // console.log('rewriting :root', rule.selectors)
+        let _val = val.trim()
+        if (_val === ':root' || _val === 'body') {
           updatedSelectors.push('.likec4-shadow-root')
+          updated = true
           continue
         }
-        if (val.trim() === 'body') {
-          updatedSelectors.push('.likec4-shadow-root')
-          continue
-        }
+        updatedSelectors.push(val)
       }
-      if (updatedSelectors.length) {
+
+      if (updated) {
         rule.selectors = updatedSelectors
       }
     })
@@ -33,66 +40,64 @@ export default defineConfig({
     'process.env.NODE_ENV': '"production"',
   },
   resolve: {
-    conditions: ['sources', 'production'],
     alias: {
-      '@tabler/icons-react': '@tabler/icons-react/dist/esm/icons/index.mjs',
-      // Strip out
-      'react-dom/server': resolve('src/react-dom-server-mock.ts'),
+      // '@likec4/diagram/custom': resolve('../diagram/src/custom/index.ts'),
+      // '@likec4/diagram': resolve('../diagram/src/index.ts'),
+      '@likec4/styles': resolve('./styled-system'),
     },
   },
   css: {
     postcss: {
       plugins: [
-        pandacss(),
-        // rewriteRootSelector,
+        postcssPanda(),
+        rewriteRootSelector,
       ],
     },
-  },
-  esbuild: {
-    jsxDev: false,
-    minifyIdentifiers: false,
-    platform: 'browser',
   },
   build: {
-    target: 'esnext',
     minify: true,
-    sourcemap: false,
     lib: {
-      entry: {
-        index: 'src/index.ts',
-      },
+      entry: 'src/index.ts',
       formats: ['es'],
     },
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        exports: 'named',
+        keepNames: true,
+        entryFileNames: '[name].mjs',
       },
       external: [
-        'react/jsx-runtime',
-        'react/jsx-dev-runtime',
-        'react-dom/client',
-        'react',
-        'react-dom',
-        '@emotion/is-prop-valid', // dev-only import from motion
-        /@likec4\/core.*/,
+        ...Object.keys(packageJson.dependencies || {}).map((dep) => new RegExp(`^${dep}(/.*)?$`)),
+        ...Object.keys(packageJson.peerDependencies || {}).map((dep) => new RegExp(`^${dep}(/.*)?$`)),
       ],
-      onwarn(warning, warn) {
-        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
-          return
-        }
-        warn(warning)
-      },
+      plugins: [
+        esmExternalRequirePlugin({
+          external: [
+            'react',
+            'react-dom',
+          ],
+        }),
+      ],
     },
   },
   plugins: [
+    react(),
+    babel({
+      presets: [reactCompilerPreset({
+        target: '18',
+      })],
+    }),
     dts({
-      rollupTypes: true,
-      bundledPackages: [
-        '@likec4/diagram',
-        '@xstate/react',
-        'xstate',
-        '@react-hookz/web',
-      ],
+      bundleTypes: {
+        bundledPackages: [
+          '@likec4/diagram',
+          '@likec4/diagram/custom',
+          '@react-hookz/web',
+          'xstate',
+          '@xstate/react',
+          '@xstate/store',
+        ],
+      },
+
       afterRollup(result) {
         if (result.errorCount > 0) {
           console.error('Rollup failed')

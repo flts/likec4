@@ -1,6 +1,7 @@
 import { CompositeGeneratorNode, expandToNode, joinToNode, NL, toString } from 'langium/generate'
 import { mapToObj } from 'remeda'
-import { type ProjectVirtualModule, generateCombinedProjects, generateMatches, k } from './_shared'
+import { logGenerating } from '../logger'
+import { type ProjectVirtualModule, generateCombinedProjects, generateMatches } from './_shared'
 import { hardenJsonStringLiteralForEmbeddedScript } from './hardenJsonStringLiteralForEmbeddedScript'
 
 function code(
@@ -21,7 +22,7 @@ function code(
      ******************************************************************************/
     /* eslint-disable */
 
-    export function dotSource(viewId) {
+    export let dotSource = (viewId) => {
       switch (viewId) {
   `
     .appendNewLine()
@@ -51,7 +52,7 @@ function code(
     .append(NL, '  }', NL).appendTemplate`
     }
 
-    export function svgSource(viewId) {
+    export let svgSource = (viewId) => {
       switch (viewId) {
     `
     .appendNewLine()
@@ -82,14 +83,17 @@ function code(
   return toString(out)
 }
 
-export const projectDotSourcesModule = {
+export const projectDotSourcesModule: ProjectVirtualModule = {
   ...generateMatches('dot'),
-  async load({ likec4, project, logger }) {
-    logger.info(k.dim(`generating likec4:dot/${project.id}`))
+  async load({ likec4, project }) {
+    logGenerating('dot', project.id)
     const views = await likec4.views.viewsAsGraphvizOut(project.id)
     const sources = mapToObj(views, ({ id, svg, dot }) => [id, { dot, svg }])
-    return code(sources)
+    return {
+      code: code(sources),
+      moduleType: 'js',
+    }
   },
-} satisfies ProjectVirtualModule
+}
 
 export const dotModule = generateCombinedProjects('dot', 'loadDotSources')

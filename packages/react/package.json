@@ -2,7 +2,7 @@
   "name": "@likec4/react",
   "description": "LikeC4 React bundle",
   "private": true,
-  "version": "1.55.1",
+  "version": "1.57.0",
   "license": "MIT",
   "bugs": "https://github.com/likec4/likec4/issues",
   "homepage": "https://likec4.dev",
@@ -21,17 +21,20 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
     "./package.json": "./package.json"
   },
   "scripts": {
+    "prebuild": "pandacss codegen",
     "build": "vite build",
     "clean": "likec4ops clean"
   },
   "dependencies": {
     "@likec4/core": "workspace:*",
+    "react-compiler-runtime": "catalog:react",
+    "use-sync-external-store": "catalog:react",
     "type-fest": "catalog:externals"
   },
   "peerDependencies": {
@@ -39,22 +42,28 @@
     "react-dom": "^18.x || ^19.x"
   },
   "devDependencies": {
-    "@pandacss/dev": "catalog:css",
-    "@react-hookz/web": "catalog:react",
+    "@babel/core": "catalog:react",
     "@likec4/devops": "workspace:*",
-    "@likec4/tsconfig": "workspace:*",
     "@likec4/diagram": "workspace:*",
     "@likec4/styles": "workspace:*",
+    "@likec4/tsconfig": "workspace:*",
+    "@microsoft/api-extractor": "^7.58.7",
+    "@pandacss/dev": "catalog:css",
+    "@react-hookz/web": "catalog:react",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
     "@xstate/react": "catalog:xstate",
     "@xstate/store": "catalog:xstate",
+    "@rolldown/plugin-babel": "catalog:vite",
+    "@vitejs/plugin-react": "catalog:vite",
+    "babel-plugin-react-compiler": "catalog:react",
+    "xstate": "catalog:xstate",
     "@xyflow/react": "catalog:xyflow",
     "@xyflow/system": "catalog:xyflow",
+    "rolldown": "catalog:tsdown",
+    "oxlint": "catalog:",
     "react": "catalog:react",
     "react-dom": "catalog:react",
-    "obuild": "catalog:obuild",
-    "oxlint": "catalog:",
     "vite-plugin-dts": "catalog:vite",
     "vite": "catalog:vite",
     "tsx": "catalog:",

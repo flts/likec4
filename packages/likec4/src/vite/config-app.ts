@@ -5,43 +5,50 @@
 //
 // Portions of this file have been modified by NVIDIA CORPORATION & AFFILIATES.
 
-import { viteAliases } from '#vite/aliases'
 import { LikeC4VitePlugin } from '@likec4/vite-plugin'
-import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 import react from '@vitejs/plugin-react'
-import fs from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
+import { isDevelopment } from 'std-env'
 import k from 'tinyrainbow'
 import { hasProtocol, withLeadingSlash, withTrailingSlash } from 'ufo'
-import type { InlineConfig, Logger } from 'vite'
+import type { BuildEnvironmentOptions, InlineConfig, Logger } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
-import { logger } from '../logger'
-import type { LikeC4ViteConfig } from './config-app.prod'
-import { chunkSizeWarningLimit, viteLogger } from './utils'
+import type { LikeC4 } from '../LikeC4'
+import type { ViteLogger } from '../logger'
+import { viteAliases } from './aliases'
+import { relativeToCwd, viteAppRoot, viteLogger } from './utils'
 
-export type { LikeC4ViteConfig }
-
-const _dirname = dirname(fileURLToPath(import.meta.url))
-export const pkgRoot = resolve(_dirname, '../..')
+export type LikeC4ViteConfig = {
+  customLogger?: ViteLogger
+  languageServices: LikeC4
+  outputDir?: string | undefined
+  base?: string | undefined
+  title?: string | undefined
+  theme?: 'light' | 'dark' | undefined
+  webcomponentPrefix?: string | undefined
+  useHashHistory?: boolean | undefined
+  likec4AssetsDir: string
+  outputSingleFile?: boolean | undefined
+  /**
+   * Optional user-provided directory whose files are copied as-is into the
+   * output (Vite publicDir). Useful for static assets like images referenced
+   * from likec4 views via absolute URLs.
+   */
+  userPublicDir?: string | undefined
+}
 
 export const viteConfig = async ({ languageServices, likec4AssetsDir, ...cfg }: LikeC4ViteConfig) => {
-  logger.warn(k.bold(k.yellow('DEVELOPMENT MODE')))
   const customLogger = cfg.customLogger ?? viteLogger
-
-  const root = resolve(pkgRoot, 'app')
-  if (!fs.existsSync(root)) {
-    customLogger.error(`app root does not exist: ${root}`)
-    throw new Error(`app root does not exist: ${root}`)
-  }
+  const root = viteAppRoot()
+  customLogger.info(`${k.cyan('likec4 app root')} ${k.dim(relativeToCwd(root))}`)
 
   const outDir = cfg.outputDir ?? resolve(languageServices.workspace, 'dist')
-  customLogger.info(k.cyan('outDir') + ' ' + k.dim(outDir))
+  customLogger.info(k.cyan('outDir') + ' ' + k.dim(relativeToCwd(outDir)))
 
   let base = '/'
   if (cfg.base) {
     base = withTrailingSlash(cfg.base)
-    if (!hasProtocol(base)) {
+    if (!hasProtocol(base) && base !== './') {
       base = withLeadingSlash(base)
     }
   }
@@ -52,93 +59,73 @@ export const viteConfig = async ({ languageServices, likec4AssetsDir, ...cfg }: 
   const webcomponentPrefix = cfg.webcomponentPrefix ?? 'likec4'
   const title = cfg.title ?? 'LikeC4'
 
+  const isSingleFile = cfg.outputSingleFile ?? false
+
   return {
-    isDev: true,
+    isDev: isDevelopment,
     likec4AssetsDir,
     webcomponentPrefix,
     title,
     root,
     languageServices,
-    configFile: false,
-    mode: 'development',
-    define: {
-      WEBCOMPONENT_PREFIX: JSON.stringify(webcomponentPrefix),
-      PAGE_TITLE: JSON.stringify(title),
-      __USE_HASH_HISTORY__: cfg?.useHashHistory === true ? 'true' : 'false',
-      __DEFAULT_THEME__: JSON.stringify(cfg?.theme ?? 'auto'),
-      'process.env.NODE_ENV': '"development"',
-    },
+    clearScreen: false,
+    base,
     resolve: {
-      conditions: ['development', 'sources'],
-      dedupe: [
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        'react/jsx-dev-runtime',
-        'react-dom/client',
-      ],
       alias: {
         ...viteAliases(),
-        'react-dom/server': resolve(pkgRoot, 'app/react/react-dom-server-mock.ts'),
+        'likec4/previews': likec4AssetsDir,
       },
     },
-    clearScreen: false,
-    optimizeDeps: {
-      force: true,
+    configFile: false,
+    mode: 'production',
+    define: {
+      'process.env.NODE_ENV': '"production"',
     },
-    base,
     build: {
       outDir,
       emptyOutDir: false,
-      cssCodeSplit: false,
       sourcemap: false,
-      minify: false,
+      minify: true,
       copyPublicDir: true,
-      assetsInlineLimit: (path, content) => !path.endsWith('.png') && content.length < 1_000_000,
-      chunkSizeWarningLimit,
-      // commonjsOptions: {
-      //       defaultIsModuleExports: (id: string) => {
-      //     if (id.includes('react')) {
-      //       return true
-      //     }
-      //     return 'auto'
-      //   },
-      //   requireReturnsDefault: 'auto',
-      //   extensions: ['.js', '.mjs'],
-      //   transformMixedEsModules: true,
-      //   // requireReturnsDefault: 'namespace',
-      //   ignoreTryCatch: 'remove'
-      // // },
-      // commonjsOptions: {
-      //   requireReturnsDefault: 'auto',
-      //   extensions: ['.js', '.mjs'],
-      //   transformMixedEsModules: true,
-      // //   // requireReturnsDefault: 'namespace',
-      //   ignoreTryCatch: 'remove'
-      // },
-      // rollupOptions: {
-      //   treeshake: {
-      //     preset: 'safest'
-      //   },
-      //   output: {
-      //     interop: 'auto',
-      //     hoistTransitiveImports: false,
-      //   }
-      // }
+      chunkSizeWarningLimit: 2 * 1024, // ~2MB
+      modulePreload: {
+        polyfill: false,
+      },
+      ...(!isSingleFile && {
+        rolldownOptions: {
+          input: [
+            resolve(root, 'index.html'),
+            resolve(root, 'src', 'main.mjs'),
+            resolve(root, 'src', 'fonts.css'),
+            resolve(root, 'src', 'style.css'),
+          ],
+          output: {
+            codeSplitting: {
+              groups: [
+                {
+                  name: 'likec4-core',
+                  test: /(likec4[\\/]core|core[\\/]dist|immer)/,
+                },
+              ],
+            },
+          },
+        },
+      } satisfies BuildEnvironmentOptions),
     },
     customLogger: customLogger as Logger,
     plugins: [
+      react(),
       LikeC4VitePlugin({
         languageServices: languageServices.languageServices,
+        appConfig: {
+          webcomponentPrefix,
+          pageTitle: title,
+          useHashHistory: cfg.useHashHistory,
+          theme: cfg.theme,
+        },
       }),
-      TanStackRouterVite({
-        routeFileIgnorePattern: '.css.ts',
-        generatedRouteTree: resolve(root, 'src/routeTree.gen.ts'),
-        routesDirectory: resolve(root, 'src/routes'),
-        quoteStyle: 'single',
-      }),
-      react(),
-      cfg.outputSingleFile ? viteSingleFile() : undefined,
+      // Enable single file output
+      isSingleFile ? viteSingleFile() : undefined,
     ],
-  } satisfies InlineConfig & LikeC4ViteConfig & { isDev: boolean }
+  } satisfies InlineConfig & Omit<LikeC4ViteConfig, 'customLogger'> & { isDev: boolean }
 }

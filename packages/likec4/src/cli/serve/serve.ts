@@ -51,6 +51,25 @@ type HandlerParams = {
    * @default true
    */
   enableHMR?: boolean | undefined
+
+  /**
+   * port number for the HMR WebSocket server
+   * @default auto-discovered from 24678-24690
+   */
+  hmrPort?: number | undefined
+
+  /**
+   * Optional user-provided directory whose files are copied to the dev server
+   * (Vite publicDir).
+   */
+  userPublicDir?: string | undefined
+
+  /**
+   * Hostnames allowed to access the dev server (maps to Vite's
+   * `server.allowedHosts`). When omitted, all hosts are allowed.
+   * @see https://vite.dev/config/server-options#server-allowedhosts
+   */
+  allowedHosts?: string[] | undefined
 }
 
 /** Starts the LikeC4 dev server (Vite) for the given workspace path. */
@@ -65,6 +84,9 @@ export async function handler({
   base,
   listen,
   port,
+  hmrPort,
+  userPublicDir,
+  allowedHosts,
 }: HandlerParams) {
   // Explicitly set NODE_ENV to development
   if (enableHMR) {
@@ -89,6 +111,9 @@ export async function handler({
     likec4AssetsDir,
     listen,
     port,
+    hmrPort,
+    userPublicDir,
+    allowedHosts,
   })
 
   server.config.logger.clearScreen('info')

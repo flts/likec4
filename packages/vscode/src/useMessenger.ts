@@ -1,5 +1,7 @@
+import type { ProjectId, ViewId } from '@likec4/core/types'
 import {
   type OpenViewPayload,
+  BroadcastAILayoutStateUpdate,
   BroadcastModelUpdate,
   BroadcastProjectsUpdate,
   ExportJpeg,
@@ -116,6 +118,7 @@ export const useMessenger = createSingletonComposable(() => {
     onWebviewNavigateTo: notificationHandler(WebviewMsgs.NavigateTo),
     onWebviewOpenExternalUrl: notificationHandler(WebviewMsgs.OpenExternalUrl),
     onWebviewUpdateMyTitle: notificationHandler(WebviewMsgs.UpdateMyTitle),
+    onWebviewEnhanceWithAI: notificationHandler(WebviewMsgs.SemanticLayout),
 
     sendOpenView: sendNotification(OnOpenView),
     sendModelUpdate: sendNotification(BroadcastModelUpdate),
@@ -130,11 +133,19 @@ export const useMessenger = createSingletonComposable(() => {
     messenger,
 
     broadcastModelUpdate: () => messenger.sendNotification(BroadcastModelUpdate, BROADCAST),
+    broadcastAiLayoutUpdate: (
+      params: { viewId: ViewId; projectId: ProjectId; state: 'in-progress' | 'completed' | 'failed' },
+    ) => messenger.sendNotification(BroadcastAILayoutStateUpdate, BROADCAST, params),
 
     ...protocol,
 
     registerPanel: (panel: vscode.WebviewPanel) => {
-      const participant = messenger.registerWebviewPanel(panel)
+      const participant = messenger.registerWebviewPanel(panel, {
+        broadcastMethods: [
+          BroadcastModelUpdate.method,
+          BroadcastAILayoutStateUpdate.method,
+        ],
+      })
       return {
         participant,
         sendOpenView: (payload: OpenViewPayload) => protocol.sendOpenView(participant, payload),

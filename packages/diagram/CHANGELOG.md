@@ -1,5 +1,29 @@
 # @likec4/diagram
 
+## 1.57.0
+
+### Patch Changes
+
+- [#2967](https://github.com/likec4/likec4/pull/2967) [`c46e33e`](https://github.com/likec4/likec4/commit/c46e33e493cd2dd2079246a276e22bd2d6d775e9) Thanks [@ckeller42](https://github.com/ckeller42)! - Fix expanded embedded LikeC4 views rendering with a transparent overlay background.
+
+  Fixes [#2965](https://github.com/likec4/likec4/issues/2965).
+
+- [#2976](https://github.com/likec4/likec4/pull/2976) [`783155b`](https://github.com/likec4/likec4/commit/783155bba49ec60485af2c7f420fbb28e893955c) Thanks [@davydkov](https://github.com/davydkov)! - Fix overlay animations (relationships browser, element details, search) glitching on open/close.
+
+- Updated dependencies [[`311b93d`](https://github.com/likec4/likec4/commit/311b93de360556b9583b901c5ad3d6692b9c9f03), [`35ba3f6`](https://github.com/likec4/likec4/commit/35ba3f637e45fc1072646f646b3442b3235cc29d)]:
+  - @likec4/core@1.57.0
+  - @likec4/styles@1.57.0
+
+## 1.56.0
+
+### Patch Changes
+
+- [#2921](https://github.com/likec4/likec4/pull/2921) [`5f46082`](https://github.com/likec4/likec4/commit/5f460821526d851ef3bbf8be5a2bd749c2df6a8a) Thanks [@davydkov](https://github.com/davydkov)! - Update Mantine to 9.1.0. The `light` variant of Buttons, Alerts, and ActionIcons now uses solid colors instead of transparency.
+
+- Updated dependencies [[`ace5b2e`](https://github.com/likec4/likec4/commit/ace5b2e5cd261f47bd2e93b6f495e2122ceef16d), [`5f46082`](https://github.com/likec4/likec4/commit/5f460821526d851ef3bbf8be5a2bd749c2df6a8a)]:
+  - @likec4/core@1.56.0
+  - @likec4/styles@1.56.0
+
 ## 1.55.1
 
 ### Patch Changes

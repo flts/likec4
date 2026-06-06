@@ -1,5 +1,6 @@
 import { first } from 'remeda'
-import { type ProjectVirtualModule, type VirtualModule, generateMatches, k } from './_shared'
+import { logGenerating } from '../logger'
+import { type ProjectVirtualModule, type VirtualModule, generateMatches } from './_shared'
 
 const projectCode = (id: string) => `
 import { jsx as _jsx } from "react/jsx-runtime";
@@ -26,20 +27,34 @@ export {
 }
 `
 
-export const projectReactModule = {
+export const projectReactModule: ProjectVirtualModule = {
   ...generateMatches('react'),
-  async load({ project, logger }) {
-    logger.info(k.dim(`generating likec4:react/${project.id}`))
-    return projectCode(project.id)
+  async load({ project }) {
+    logGenerating('react', project.id)
+    return {
+      code: projectCode(project.id),
+      moduleType: 'js',
+    }
   },
-} satisfies ProjectVirtualModule
+}
 
-export const singleProjectReactModule = {
+export const singleProjectReactModule: VirtualModule = {
   id: 'likec4:react',
   virtualId: 'likec4:plugin/react.js',
-  async load({ logger, projects }) {
+  async load({ projects }) {
     const project = first(projects)
-    logger.info(k.dim('generating likec4:react for') + ' ' + project.id)
-    return projectCode(project.id)
+    logGenerating('react-default-project')
+    const code = `export {
+  useLikeC4Model,
+  useLikeC4View,
+  useLikeC4Views,
+  LikeC4ModelProvider,
+  LikeC4View,
+  ReactLikeC4
+} from 'likec4:react/${project.id}'`
+    return {
+      code,
+      moduleType: 'js',
+    }
   },
-} satisfies VirtualModule
+}

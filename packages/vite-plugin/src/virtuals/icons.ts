@@ -1,18 +1,19 @@
-import type { ComputedView } from '@likec4/core/types'
 import { compareNatural } from '@likec4/core/utils'
-import { filter, isTruthy, pipe, sort, unique } from 'remeda'
+import { filter, flatMap, isTruthy, map, pipe, sort, unique, values } from 'remeda'
 import k from 'tinyrainbow'
 import { joinURL } from 'ufo'
+import { logGenerating } from '../logger'
 import { type ProjectVirtualModule, type VirtualModule, generateMatches } from './_shared'
 import { hardenJsonStringLiteralForEmbeddedScript } from './hardenJsonStringLiteralForEmbeddedScript'
 
-function code(views: ComputedView[]) {
+const startsWithHttp = /^(https?:)?\/\//i
+
+function code<V extends { nodes: ReadonlyArray<{ icon?: string | null }> }>(views: V[]) {
   const icons = pipe(
-    views.flatMap(v => v.nodes.map(n => n.icon as string | undefined)),
-    filter((s): s is string =>
-      isTruthy(s) &&
-      !(s.toLowerCase().startsWith('http:') || s.toLowerCase().startsWith('https:'))
-    ),
+    views,
+    flatMap(v => v.nodes),
+    map(n => n.icon ?? undefined),
+    filter((s): s is string => isTruthy(s) && !startsWithHttp.test(s)),
     unique(),
     sort(compareNatural),
   )
@@ -32,8 +33,8 @@ function code(views: ComputedView[]) {
     }
 
     const [group, icon] = s.split(':') as ['aws' | 'azure' | 'gcp' | 'tech', string]
-
-    acc.imports.push(`import ${Component} from '@likec4/icons/${group}/${icon}'`)
+    const url = `likec4:icon-bundle/${group}/${icon}.jsx`
+    acc.imports.push(`import ${Component} from '${url}'`)
     acc.cases.push(`  '${group}:${icon}': ${Component}`)
     return acc
   }, {
@@ -57,14 +58,21 @@ export function IconRenderer({ node, ...props }) {
 `
 }
 
-export const projectIconsModule = {
+export const projectIconsModule: ProjectVirtualModule = {
   ...generateMatches('icons', '.jsx'),
-  async load({ likec4, project, logger }) {
-    logger.info(k.dim(`generating likec4:icons/${project.id}`))
-    const views = await likec4.views.computedViews(project.id)
-    return code(views)
+  async load({ likec4, project }) {
+    logGenerating('icons', project.id)
+    const model = await likec4.computedModel(project.id)
+    const views = [
+      ...values(model.$data.views),
+      ...values(model.$data.manualLayouts ?? {}),
+    ]
+    return {
+      moduleType: 'jsx',
+      code: code(views),
+    }
   },
-} satisfies ProjectVirtualModule
+}
 
 /** Safe chars for project id when embedded in generated code (CodeQL: proper sanitization). */
 const SAFE_PROJECT_ID_REGEX = /^[a-zA-Z0-9_.-]+$/
@@ -86,7 +94,7 @@ export const iconsModule = {
   id: 'likec4:icons',
   virtualId: 'likec4:plugin/icons.jsx',
   async load({ projects, logger }) {
-    logger.info(k.dim(`generating likec4:icons`))
+    logGenerating('icons')
 
     const safeProjects = projects.filter(p => {
       if (!SAFE_PROJECT_ID_REGEX.test(p.id)) {
@@ -97,37 +105,46 @@ export const iconsModule = {
     })
 
     // codeql[js/bad-code-sanitization]: Generated import() specifiers are JSON string literals from joinURL('likec4:icons', id) after JSON.stringify + hardenJsonStringLiteralForEmbeddedScript; ids pass SAFE_PROJECT_ID_REGEX (no breakout in emitted JS).
-    const registry = safeProjects
-      .map(p => {
-        const idLiteral = hardenJsonStringLiteralForEmbeddedScript(embedProjectIdAsJsString(p.id))
+    const { imports, cases } = safeProjects
+      .reduce((acc, p, i) => {
+        const ProjectComponent = 'Project' + i.toString().padStart(2, '0')
+        const idLiteral = hardenJsonStringLiteralForEmbeddedScript(
+          embedProjectIdAsJsString(p.id),
+        )
         const pkgLiteral = hardenJsonStringLiteralForEmbeddedScript(
           embedUrlAsJsString(joinURL('likec4:icons', p.id)),
         )
-        return `${idLiteral}: lazy(() => import(${pkgLiteral}).then(m => ({default: m.IconRenderer})))`
+        acc.imports.push(`import {IconRenderer as ${ProjectComponent}} from ${pkgLiteral}`)
+        acc.cases.push(`  ${idLiteral}: ${ProjectComponent}`)
+        return acc
+      }, {
+        imports: [] as string[],
+        cases: [] as string[],
       })
-      .join(',\n')
 
-    return `
+    const code = `
 import { jsx } from 'react/jsx-runtime'
-import { lazy, Suspense } from 'react' 
-export let ProjectIconsRegistry = {
-${registry}
-}      
+${imports.join('\n')}
 
+export let ProjectIconsRegistry = {
+${cases.join(',\n')}
+}
 
 export function getProjectIcons(projectId) {
-  let fn = ProjectIconsRegistry[projectId]
-  if (!fn) {
-    const projects = Object.keys(ProjectIconsRegistry)
-    console.error('Unknown projectId: ' + projectId + ' (available: ' + projects + ')')
-    if (projects.length === 0) {
-      throw new Error('No projects found, invalid state')
+  return (props) => {
+    let Renderer = ProjectIconsRegistry[projectId]
+    if (!Renderer) {
+      const projects = Object.keys(ProjectIconsRegistry)
+      console.error('Unknown projectId: ' + projectId + ' (available: ' + projects + ')')
+      if (projects.length === 0) {
+        throw new Error('No projects found, invalid state')
+      }
+      projectId = projects[0]
+      console.warn('Falling back to project: ' + projectId)
+      Renderer = ProjectIconsRegistry[projectId]
     }
-    projectId = projects[0]
-    console.warn('Falling back to project: ' + projectId)
-    fn = ProjectIconsRegistry[projectId]
+    return jsx(Renderer, props)
   }
-  return (props) => jsx(Suspense, { children: jsx(fn, props) })
 }
 
 if (import.meta.hot) {
@@ -144,5 +161,9 @@ if (import.meta.hot) {
   })
 }
 `
+    return {
+      code,
+      moduleType: 'jsx',
+    }
   },
 } satisfies VirtualModule

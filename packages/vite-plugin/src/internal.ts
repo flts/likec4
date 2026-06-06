@@ -2,13 +2,14 @@
  * This module is used by the Vite plugin to generate the virtual modules
  */
 import { LikeC4Model } from '@likec4/core/model'
-import type { DiagramView, LayoutedLikeC4ModelData } from '@likec4/core/types'
+import type { LayoutedLikeC4ModelData, LayoutedView } from '@likec4/core/types'
 import { useStore } from '@nanostores/react'
 import { createBirpc } from 'birpc'
+import { deepEqual, shallowEqual } from 'fast-equals'
 import type { Atom, WritableAtom } from 'nanostores'
 import { computed } from 'nanostores'
 import { useMemo } from 'react'
-import { isDeepEqual, mapValues } from 'remeda'
+import { mapValues } from 'remeda'
 import type { LikeC4VitePluginRpc } from './rpc/protocol'
 
 export { atom, batched, computed, map } from 'nanostores'
@@ -34,9 +35,13 @@ export interface LikeC4VitePluginRpcOptions {
  * used by the Vite plugin in virtual modules
  */
 export function createRpc(options: LikeC4VitePluginRpcOptions): LikeC4VitePluginRpc {
-  return createBirpc({}, {
+  const rpc = createBirpc<LikeC4VitePluginRpc>({}, {
+    timeout: 2 * 60 * 1000, // 2 minutes (for applySemanticLayout)
     post: (data) => options.send('likec4:rpc', data),
     on: (fn) => options.on('likec4:rpc', fn),
+    onTimeoutError(functionName) {
+      return functionName === 'applySemanticLayout'
+    },
     onGeneralError(error, functionName) {
       console.error(`RPC error in ${functionName}`, { error })
     },
@@ -44,36 +49,37 @@ export function createRpc(options: LikeC4VitePluginRpcOptions): LikeC4VitePlugin
       console.error(`RPC error in ${functionName}`, { error })
     },
   })
+  return rpc
 }
 
 // This is a workaround to avoid type errors in the Vite plugin
-export const createHooksForModel: ($atom: WritableAtom) => any = ($atom: WritableAtom<LayoutedLikeC4ModelData>): {
+export function createHooksForModel($atom: WritableAtom<LayoutedLikeC4ModelData>): {
   updateModel: (data: LayoutedLikeC4ModelData) => void
   $likec4model: Atom<LikeC4Model.Layouted>
   useLikeC4Model: () => LikeC4Model.Layouted
-  useLikeC4Views: () => ReadonlyArray<DiagramView>
-  useLikeC4View: (viewId: string) => DiagramView | null
-} => {
+  useLikeC4Views: () => ReadonlyArray<LayoutedView>
+  useLikeC4View: (viewId: string) => LayoutedView | null
+} {
   const $likec4model = computed($atom, (data) => LikeC4Model.create(data))
 
   function updateModel(data: LayoutedLikeC4ModelData) {
     const current = $atom.get()
-    if (isDeepEqual(current, data)) {
-      return
-    }
-
     const next = {
       ...data,
       views: mapValues(data.views, (next) => {
         const currentView = current.views[next.id]
-        return isDeepEqual(currentView, next) ? currentView : next
+        return deepEqual(currentView, next) ? currentView : next
       }),
+    }
+    // Check for shallow first, then deep equality to avoid unnecessary updates
+    if (shallowEqual(next.views, current.views) && deepEqual(next, current)) {
+      return
     }
     $atom.set(next as LayoutedLikeC4ModelData)
   }
 
   // Return views with manual layouts applied via $layouted (#2553).
-  const $likec4views: Atom<ReadonlyArray<DiagramView>> = computed(
+  const $likec4views: Atom<ReadonlyArray<LayoutedView>> = computed(
     $likec4model,
     (model) => [...model.views()].map(v => v.$layouted),
   )
@@ -82,11 +88,11 @@ export const createHooksForModel: ($atom: WritableAtom) => any = ($atom: Writabl
     return useStore($likec4model)
   }
 
-  function useLikeC4Views(): ReadonlyArray<DiagramView> {
+  function useLikeC4Views(): ReadonlyArray<LayoutedView> {
     return useStore($likec4views)
   }
 
-  function useLikeC4View(viewId: string): DiagramView | null {
+  function useLikeC4View(viewId: string): LayoutedView | null {
     const $view = useMemo(
       () => computed($likec4model, (model) => model.findView(viewId)?.$layouted ?? null),
       [viewId],

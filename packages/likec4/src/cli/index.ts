@@ -34,7 +34,7 @@ import validateCmd from './validate'
  * Configure likec4 logger: verbose or dev => debug level, else info.
  */
 function applyLoggerConfig(logLevel: ConfigureLanguageServerLoggerOptions['logLevel']) {
-  const lowestLevel = logLevel ?? (isDevelopment ? 'trace' : 'info')
+  const lowestLevel = logLevel ?? (isDevelopment ? 'debug' : 'info')
   configureLogger({
     reset: true,
     sinks: {
@@ -88,6 +88,7 @@ async function main() {
   await y
     .scriptName('likec4')
     .usage(`Usage: $0 <command>`)
+    .parserConfiguration({ 'greedy-arrays': false })
     .version(pkg.version)
     .alias('v', 'version')
     .alias('h', 'help')

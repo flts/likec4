@@ -1,7 +1,7 @@
 {
   "name": "likec4",
   "description": "Toolchain for your architecture diagrams",
-  "version": "1.55.1",
+  "version": "1.57.0",
   "license": "MIT",
   "homepage": "https://likec4.dev",
   "author": "Denis Davydkov <denis@davydkov.com>",
@@ -20,7 +20,7 @@
     "graph"
   ],
   "engines": {
-    "node": ">=22.22.0"
+    "node": ">=22.22.3"
   },
   "bugs": "https://github.com/likec4/likec4/issues",
   "type": "module",
@@ -70,9 +70,9 @@
     "./vite-plugin/internal": {
       "sources": "./src/vite-plugin/internal.ts",
       "default": {
-        "types": "./dist/vite-plugin/internal.d.mts",
-        "import": "./dist/vite-plugin/internal.mjs",
-        "default": "./dist/vite-plugin/internal.mjs"
+        "types": "./dist/vite-plugin/internal/index.d.mts",
+        "import": "./dist/vite-plugin/internal/index.mjs",
+        "default": "./dist/vite-plugin/internal/index.mjs"
       }
     },
     "./vite-plugin": {
@@ -91,37 +91,14 @@
     "types": "dist/index.d.mts",
     "module": "dist/index.mjs"
   },
-  "imports": {
-    "#vite/aliases": {
-      "production": "./src/vite/aliases.prod.ts",
-      "sources": "./src/vite/aliases.ts"
-    },
-    "#vite/config-app": {
-      "production": "./src/vite/config-app.prod.ts",
-      "sources": "./src/vite/config-app.ts"
-    },
-    "#vite/config-react": {
-      "production": "./src/vite/config-react.prod.ts",
-      "sources": "./src/vite/config-react.ts"
-    },
-    "#vite/config-webcomponent": {
-      "production": "./src/vite/config-webcomponent.prod.ts",
-      "sources": "./src/vite/config-webcomponent.ts"
-    }
-  },
   "scripts": {
     "typecheck": "tsc --build --verbose",
-    "build-cli": "obuild",
-    "build-app": "tsx --conditions=sources scripts/bundle-app.ts",
-    "build-react": "tsx --conditions=sources scripts/bundle-react.ts",
-    "build": "echo \"use pnpm turbo run build\" || true",
-    "generate:app": "tsr generate",
+    "build": "tsdown",
     "prepack": "likec4ops prepack",
     "pack": "pnpm pack",
     "postpack": "likec4ops postpack",
-    "lint": "run -T eslint src/ --fix",
     "lint:package": "pnpx publint ./package.tgz",
-    "clean": "pnpm rimraf --glob lib dist app/dist dev/.export dev/dist node_modules/.vite react/* icons",
+    "clean": "pnpm rimraf --glob lib dist app/dist dev/.export dev/dist node_modules/.vite react/* __app__",
     "start": "tsx --conditions=sources src/cli/index.ts",
     "dev": "pnpm cli:serve dev",
     "dev:docs": "pnpm cli:serve ../../apps/docs/src",
@@ -153,16 +130,45 @@
     "fdir": "catalog:externals",
     "playwright": "catalog:",
     "chokidar": "catalog:externals",
+    "immer": "catalog:utils",
     "std-env": "catalog:externals",
     "type-fest": "catalog:externals",
-    "vite-plugin-singlefile": "^2.3.2",
+    "vite-plugin-singlefile": "^2.3.3",
     "vite": "catalog:vite",
     "yargs": "17.7.2",
-    "nano-spawn": "catalog:externals"
+    "nano-spawn": "catalog:externals",
+    "use-sync-external-store": "catalog:react",
+    "react-compiler-runtime": "catalog:react"
   },
   "peerDependencies": {
+    "@tanstack/ai": "catalog:ai",
+    "@tanstack/ai-anthropic": "catalog:ai",
+    "@tanstack/ai-gemini": "catalog:ai",
+    "@tanstack/ai-openai": "catalog:ai",
+    "@tanstack/ai-ollama": "catalog:ai",
+    "@tanstack/ai-openrouter": "catalog:ai",
     "react": "^18.x || ^19.x",
     "react-dom": "^18.x || ^19.x"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/ai": {
+      "optional": true
+    },
+    "@tanstack/ai-anthropic": {
+      "optional": true
+    },
+    "@tanstack/ai-gemini": {
+      "optional": true
+    },
+    "@tanstack/ai-openai": {
+      "optional": true
+    },
+    "@tanstack/ai-ollama": {
+      "optional": true
+    },
+    "@tanstack/ai-openrouter": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "langium": "catalog:langium",
@@ -179,50 +185,39 @@
     "@likec4/layouts": "workspace:*",
     "@likec4/vite-plugin": "workspace:*",
     "@likec4/react": "workspace:*",
+    "@likec4/spa": "workspace:*",
     "@likec4/generators": "workspace:*",
     "@likec4/style-preset": "workspace:*",
     "@likec4/styles": "workspace:*",
     "@likec4/tsconfig": "workspace:*",
-    "@mantine/core": "catalog:mantine",
-    "@mantine/hooks": "catalog:mantine",
     "@pandacss/dev": "catalog:css",
-    "@react-hookz/web": "catalog:react",
-    "@tabler/icons-react": "catalog:react",
-    "@tanstack/react-router": "catalog:tanstack",
-    "@tanstack/router-cli": "catalog:tanstack",
-    "@tanstack/router-vite-plugin": "catalog:tanstack",
+    "@tanstack/ai": "catalog:ai",
     "@types/node": "catalog:",
     "@types/picomatch": "catalog:externals",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
     "@types/semver": "^7.7.1",
     "@types/yargs": "^17.0.33",
-    "@xstate/react": "catalog:xstate",
-    "@xstate/store": "catalog:xstate",
-    "@xyflow/react": "catalog:xyflow",
-    "@xyflow/system": "catalog:xyflow",
     "autoprefixer": "^10.4.27",
     "picomatch": "catalog:externals",
     "birpc": "catalog:vite",
     "boxen": "^8.0.1",
     "clsx": "catalog:react",
     "conf": "^15.1.0",
-    "defu": "^6.1.7",
+    "defu": "catalog:utils",
     "esbuild-node-externals": "catalog:esbuild",
     "esm-env": "catalog:utils",
     "fast-equals": "catalog:utils",
     "get-port": "^7.1.0",
-    "html-to-image": "1.11.11",
     "is-inside-container": "^1.0.0",
     "json5": "catalog:utils",
     "ky": "^1.14.3",
-    "merge-error-cause": "^5.0.2",
     "mkdirp": "^3.0.1",
-    "motion": "catalog:react",
     "npm-run-all2": "^8.0.4",
     "p-limit": "catalog:utils",
     "nanostores": "catalog:react",
     "@nanostores/react": "catalog:react",
+    "oxlint": "catalog:",
     "package-manager-detector": "catalog:utils",
     "package-up": "catalog:utils",
     "postcss": "catalog:css",
@@ -231,18 +226,16 @@
     "react-dom": "catalog:react",
     "react-error-boundary": "catalog:react",
     "react-resizable-panels": "catalog:react",
-    "react-shadow": "catalog:react",
     "remeda": "catalog:utils",
-    "semver": "^7.7.4",
+    "semver": "^7.8.1",
     "strip-indent": "catalog:utils",
-    "tinyrainbow": "^3.1.0",
+    "tinyrainbow": "catalog:utils",
     "tsx": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
     "ufo": "catalog:utils",
-    "obuild": "catalog:obuild",
+    "tsdown": "catalog:tsdown",
     "vite-plugin-dts": "catalog:vite",
-    "vite-plugin-inspect": "^11.3.3",
     "vitest": "catalog:vitest",
     "vscode-jsonrpc": "catalog:vscode",
     "vscode-languageserver": "catalog:vscode",
@@ -251,7 +244,6 @@
     "which": "^5.0.0",
     "wireit": "catalog:",
     "zod": "catalog:externals",
-    "zx": "catalog:",
-    "xstate": "catalog:xstate"
+    "zx": "catalog:"
   }
 }

@@ -1,7 +1,7 @@
 import type { LikeC4Model } from '@likec4/core/model'
 import { generateD2 } from '@likec4/generators'
 import { CompositeGeneratorNode, expandToNode, joinToNode, NL, toString } from 'langium/generate'
-import k from 'tinyrainbow'
+import { logGenerating } from '../logger'
 import { type ProjectVirtualModule, generateCombinedProjects, generateMatches } from './_shared'
 
 function code(model: LikeC4Model.Computed) {
@@ -13,7 +13,7 @@ function code(model: LikeC4Model.Computed) {
      ******************************************************************************/
     /* eslint-disable */
 
-    export function d2Source(viewId) {
+    export let d2Source = (viewId) => {
       switch (viewId) {
   `
     .appendNewLine()
@@ -46,13 +46,16 @@ function code(model: LikeC4Model.Computed) {
   return toString(out)
 }
 
-export const projectD2Module = {
+export const projectD2Module: ProjectVirtualModule = {
   ...generateMatches('d2'),
-  async load({ likec4, project, logger }) {
-    logger.info(k.dim(`generating likec4:d2/${project.id}`))
+  async load({ likec4, project }) {
+    logGenerating('d2', project.id)
     const model = await likec4.computedModel(project.id)
-    return code(model)
+    return {
+      code: code(model),
+      moduleType: 'js',
+    }
   },
-} satisfies ProjectVirtualModule
+}
 
 export const d2Module = generateCombinedProjects('d2', 'loadD2Sources')

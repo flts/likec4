@@ -1,6 +1,6 @@
 {
   "name": "@likec4/devops",
-  "version": "1.42.0",
+  "version": "1.57.0",
   "type": "module",
   "private": true,
   "sideEffects": false,
@@ -12,7 +12,8 @@
   },
   "exports": {
     ".": "./likec4ops.ts",
-    "./vitest": "./vitest.ts"
+    "./vitest": "./vitest.ts",
+    "./tsdown": "./tsdown.ts"
   },
   "dependencies": {
     "parse-gitignore": "^2.0.0",
@@ -24,6 +25,7 @@
     "defu": "catalog:utils",
     "pathe": "catalog:utils",
     "tsx": "catalog:",
+    "tsdown": "catalog:tsdown",
     "zx": "catalog:"
   },
   "devDependencies": {

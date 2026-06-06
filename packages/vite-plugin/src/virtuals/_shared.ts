@@ -1,28 +1,50 @@
 import type { LikeC4ProjectConfig } from '@likec4/config'
 import type { LikeC4Project, NonEmptyArray, ProjectId } from '@likec4/core'
-import type { LikeC4LanguageServices } from '@likec4/language-server'
+import type { LikeC4LanguageServices } from '@likec4/language-services'
 import type { URI } from 'langium'
 import k from 'tinyrainbow'
 import { joinURL } from 'ufo'
-import type { ViteLogger } from '../logger'
+import type { Rolldown } from 'vite'
+import { type ViteLogger, logGenerating } from '../logger'
+import type { AIOptions } from '../plugin'
 import { hardenJsonStringLiteralForEmbeddedScript } from './hardenJsonStringLiteralForEmbeddedScript'
 
 export { k }
 
-export type VirtualModuleProject = LikeC4Project & {
+export type ProjectData = LikeC4Project & {
   folder: URI
   config: Readonly<LikeC4ProjectConfig>
 }
+export type ProjectsData = NonEmptyArray<ProjectData>
+
+export type VirtualModuleLoadResult = Rolldown.SourceDescription | string
+
+export type SharedVirtualModuleOptions =
+  & {
+    rpcEnabled: boolean
+    logger: ViteLogger
+    likec4: LikeC4LanguageServices
+    assetsDir: string
+  }
+  & (
+    {
+      isAIAvailable: false
+      ai: undefined
+    } | {
+      isAIAvailable: false
+      ai: AIOptions
+    }
+  )
 
 export interface VirtualModule {
   id: string
   virtualId: string
-  load(opts: {
-    logger: ViteLogger
-    likec4: LikeC4LanguageServices
-    projects: NonEmptyArray<VirtualModuleProject>
-    assetsDir: string
-  }): Promise<string>
+  load(
+    this: Rolldown.MinimalPluginContext,
+    opts: SharedVirtualModuleOptions & {
+      projects: NonEmptyArray<ProjectData>
+    },
+  ): Promise<VirtualModuleLoadResult>
 }
 
 /**
@@ -31,19 +53,19 @@ export interface VirtualModule {
 export interface ProjectVirtualModule {
   matches: (id: string) => ProjectId | null
   virtualId: (projectId: ProjectId) => string
-  load(opts: {
-    logger: ViteLogger
-    likec4: LikeC4LanguageServices
-    project: VirtualModuleProject
-    assetsDir: string
-  }): Promise<string>
+  load(
+    this: Rolldown.MinimalPluginContext,
+    opts: SharedVirtualModuleOptions & {
+      project: ProjectData
+    },
+  ): Promise<VirtualModuleLoadResult>
 }
 
 export function generateMatches(moduleId: string, extension = '.js') {
   return {
     matches: (id: string): ProjectId | null => {
-      let { module, projectId } = id.match(/^likec4:plugin\/(?<projectId>.+)\/(?<module>.+)$/)?.groups ??
-        id.match(/^likec4:(?<module>.+)\/(?<projectId>.+)$/)?.groups ?? {}
+      let { module, projectId } = id.match(/likec4:plugin\/(?<projectId>.+)\/(?<module>.+)$/)?.groups ??
+        id.match(/likec4:(?<module>.+)\/(?<projectId>.+)$/)?.groups ?? {}
       if (!module || !projectId) {
         return null
       }
@@ -62,19 +84,19 @@ export function generateMatches(moduleId: string, extension = '.js') {
 export function generateCombinedProjects(moduleId: string, fnName: string): VirtualModule {
   return {
     id: `likec4:${moduleId}`,
-    virtualId: `likec4:plugin/${moduleId}.js`,
-    async load({ logger, projects }) {
-      logger.info(k.dim(`generating likec4:${moduleId}`))
+    virtualId: 'likec4:plugin/' + moduleId + '.js',
+    async load({ projects }) {
+      logGenerating(moduleId)
 
       const cases = projects.map(({ id }) => {
         const idLiteral = hardenJsonStringLiteralForEmbeddedScript(JSON.stringify(id))
         const pkgLiteral = hardenJsonStringLiteralForEmbeddedScript(
           JSON.stringify(joinURL(`likec4:${moduleId}`, id)),
         )
-        return `${idLiteral}: () => import(${pkgLiteral})`
+        return `${idLiteral}: async () => await import(${pkgLiteral})`
       })
 
-      return `
+      const code = `
 export let ${fnName}Fn = {
 ${cases.join(',\n')}
 }      
@@ -101,13 +123,19 @@ if (import.meta.hot) {
     }
     const update = md.${fnName}Fn
     if (update) {
-      Object.assign(import.meta.hot.data.$update, update)
+      for (const [id, fn] of Object.entries(update)) {
+        import.meta.hot.data.$update[id] ??= fn
+      }
     } else {
       import.meta.hot.invalidate()
     }
   })
 }
     `
+      return {
+        code,
+        moduleType: 'js',
+      }
     },
   }
 }

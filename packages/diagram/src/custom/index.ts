@@ -42,6 +42,7 @@ export type {
 
 export { Base } from '../base/Base'
 
+export type { XYStoreState } from '../hooks/useXYFlow'
 export type { Types } from '../likec4diagram/types'
 
 export {
@@ -57,8 +58,6 @@ export { Overlay } from '../overlays/overlay/Overlay'
 export type { OverlayProps } from '../overlays/overlay/Overlay'
 
 export { PortalToContainer } from '../components/PortalToContainer'
-
-export { ShadowRoot } from '../shadowroot/ShadowRoot'
 
 export { FramerMotionConfig } from '../context/FramerMotionConfig'
 

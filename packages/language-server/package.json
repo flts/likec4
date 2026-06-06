@@ -1,7 +1,7 @@
 {
   "name": "@likec4/language-server",
   "description": "LikeC4 Language Server",
-  "version": "1.55.1",
+  "version": "1.57.0",
   "license": "MIT",
   "bugs": "https://github.com/likec4/likec4/issues",
   "homepage": "https://likec4.dev",
@@ -22,7 +22,7 @@
     "directory": "packages/language-server"
   },
   "engines": {
-    "node": ">=22.22.1"
+    "node": ">=22.22.3"
   },
   "type": "module",
   "sideEffects": false,
@@ -158,10 +158,10 @@
     "json5": "catalog:utils",
     "langium": "catalog:langium",
     "nano-spawn": "catalog:externals",
-    "pathe": "catalog:utils",
     "p-limit": "catalog:utils",
     "p-queue": "catalog:utils",
     "p-timeout": "catalog:utils",
+    "pathe": "catalog:utils",
     "picomatch": "catalog:externals",
     "pretty-ms": "^9.3.0",
     "remeda": "catalog:utils",
@@ -203,6 +203,7 @@
     "bundle-require": "catalog:externals",
     "esbuild": "catalog:esbuild",
     "langium-cli": "catalog:langium",
+    "memfs": "catalog:",
     "obuild": "catalog:obuild",
     "oxlint": "catalog:",
     "tsx": "catalog:",

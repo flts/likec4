@@ -3,7 +3,7 @@ import {
   executeCommand,
   toValue,
 } from 'reactive-vscode'
-import vscode from 'vscode'
+import * as vscode from 'vscode'
 import { commands } from '../meta'
 import { useExtensionLogger } from '../useExtensionLogger'
 import { useMessenger } from '../useMessenger'
@@ -44,7 +44,7 @@ export function activateMessenger() {
         err,
       })
       const error = loggable(err)
-      output.show()
+      output.show(true)
       return {
         model: null,
         error,
@@ -82,7 +82,7 @@ export function activateMessenger() {
     } catch (err) {
       logger.warn(`request {req} of {viewId} failed after ${t0.pretty}`, { req: 'layoutView', err, viewId })
       const error = loggable(err)
-      output.show()
+      output.show(true)
       return {
         view: null,
         error,
@@ -128,19 +128,18 @@ export function activateMessenger() {
       if (!result.success) {
         // direct output to bypass telemetry error
         output.error(result.error)
-        output.show()
+        output.show(true)
         return result
       }
       // For save-view-snapshot, we don't need to navigate
       if (change.op === 'reset-manual-layout' || change.op === 'save-view-snapshot') {
         return { success: true }
       }
-      const loc = result.location ?? null
-      if (!loc) {
+      const location = result.location ?? null
+      if (!location) {
         logger.warn(`rpc.changeView returned null`)
         return result
       }
-      const location = rpc.client.protocol2CodeConverter.asLocation(loc)
       await showEditorNextToPreview({
         previewColumn: toValue(preview.panelViewColumn),
         location,
@@ -154,7 +153,7 @@ export function activateMessenger() {
       // direct output to bypass telemetry error
       const error = loggable(wrapError(e, 'changeView failed:\n'))
       output.error(error)
-      output.show()
+      output.show(true)
       return {
         success: false,
         error,

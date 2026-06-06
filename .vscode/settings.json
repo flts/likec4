@@ -1,6 +1,6 @@
 {
-  "typescript.tsdk": "./node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "js/ts.tsdk.path": "./node_modules/typescript/lib",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
   "eslint.enable": false,
   "oxc.enable": true,
   "oxc.typeAware": true,
@@ -39,10 +39,12 @@
     "**/worker-configuration.d.ts": true,
     "packages/icons/**/*.tsx": true,
     "**/__snapshots__/**": true,
+    "packages/likec4/__app__": true,
     "packages/language-server/src/generated*/**": true,
   },
   "search.exclude": {
     "node_modules/**": true,
+    "packages/likec4/__app__": true,
     "packages/*/dist/**": true,
     "packages/*/bundle/**": true,
     "**/panda.buildinfo.json": true,
@@ -56,7 +58,6 @@
     "**/.tanstack": true,
     "**/.wrangler": true,
     ".pnpm-store/**": true,
-    "packages/likec4/__app__": true,
     "packages/*/.vscode-test-web": true,
     "packages/*/node_modules": true,
     "packages/*/styled-system": true,
@@ -112,5 +113,4 @@
     "connectionId": "likec4",
     "projectKey": "likec4_likec4"
   },
-  "references.preferredLocation": "peek"
 }

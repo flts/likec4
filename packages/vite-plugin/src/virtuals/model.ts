@@ -1,13 +1,14 @@
 import { LikeC4Model } from '@likec4/core/model'
 import JSON5 from 'json5'
-import { type ProjectVirtualModule, generateCombinedProjects, generateMatches, k } from './_shared'
+import { logGenerating } from '../logger'
+import { type ProjectVirtualModule, generateCombinedProjects, generateMatches } from './_shared'
 
 const projectModelCode = (model: LikeC4Model.Layouted) => `
 import { createHooksForModel, atom } from 'likec4/vite-plugin/internal'
 
-export const $likec4data = atom(${JSON5.stringify(model.$data)})
+export let $likec4data = atom(${JSON5.stringify(model.$data)})
 
-export const {
+export let {
   updateModel,
   $likec4model,
   useLikeC4Model,
@@ -30,13 +31,16 @@ if (import.meta.hot) {
 }
 `
 
-export const projectModelModule = {
+export const projectModelModule: ProjectVirtualModule = {
   ...generateMatches('model'),
-  async load({ likec4, project, logger }) {
-    logger.info(k.dim(`generating likec4:model/${project.id}`))
+  async load({ likec4, project }) {
+    logGenerating('model', project.id)
     const model = await likec4.layoutedModel(project.id)
-    return projectModelCode(model)
+    return {
+      code: projectModelCode(model),
+      moduleType: 'js',
+    }
   },
-} satisfies ProjectVirtualModule
+}
 
 export const modelModule = generateCombinedProjects('model', 'loadModel')

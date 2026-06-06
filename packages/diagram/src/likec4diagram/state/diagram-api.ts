@@ -8,8 +8,10 @@ import { invariant, nonNullable } from '@likec4/core/utils'
 import type { RefObject } from 'react'
 import type { PartialDeep } from 'type-fest'
 import type { FeatureName, TogglableFeature } from '../../context/DiagramFeatures'
+import type { EditorActorRef } from '../../editor/actor/machine'
 import type { OpenSourceParams } from '../../LikeC4Diagram.props'
 import type { OverlaysActorRef } from '../../overlays/overlaysActor'
+import type { SearchActorRef } from '../../search/searchActor'
 import type { Types } from '../types'
 import type { AlignmentMode } from './aligners'
 import type {
@@ -40,7 +42,24 @@ export interface DiagramApi<A extends Any = Unknown> {
    */
   readonly currentView: t.DiagramView<A>
 
+  /**
+   * Editor actor reference
+   * @warning Do not use in render phase
+   */
+  editorActor(): EditorActorRef
+
+  /**
+   * Overlays actor reference
+   * @warning Do not use in render phase
+   */
   overlays(): OverlaysActorRef
+
+  /**
+   * Search actor reference
+   * @warning Do not use in render phase
+   */
+  searchActor(): SearchActorRef
+
   /**
    * Send event to diagram actor
    */
@@ -155,8 +174,17 @@ export function makeDiagramApi<A extends Any = Unknown>(actorRef: RefObject<Diag
     get actor(): DiagramActorRef {
       return actorRef.current
     },
+    editorActor(): EditorActorRef {
+      const editorActor = typedSystem(actorRef.current.system).editorActorRef
+      return nonNullable(editorActor, 'Editor actor not found in actor system')
+    },
     overlays(): OverlaysActorRef {
-      return nonNullable(actorRef.current.getSnapshot().children.overlays, 'Overlays actor not found')
+      const overlaysActor = typedSystem(actorRef.current.system).overlaysActorRef
+      return nonNullable(overlaysActor, 'Overlays actor not found in actor system')
+    },
+    searchActor(): SearchActorRef {
+      const searchActor = typedSystem(actorRef.current.system).searchActorRef
+      return nonNullable(searchActor, 'Search actor not found in actor system')
     },
     send: (event: DiagramEvents) => actorRef.current.send(event),
     navigateTo: (viewId: ViewId<A>, fromNode?: NodeId, focusOnElement?: Fqn<A>) => {
@@ -199,17 +227,17 @@ export function makeDiagramApi<A extends Any = Unknown>(actorRef: RefObject<Diag
     startEditing: (subject: 'node' | 'edge') => {
       const editorActor = typedSystem(actorRef.current.system).editorActorRef
       invariant(editorActor, 'No editor actor found in diagram actor system')
-      editorActor.send({ type: 'edit.start', subject })
+      editorActor.send({ type: 'edit.move.start', subject })
     },
     stopEditing: (wasChanged = false) => {
       const editorActor = typedSystem(actorRef.current.system).editorActorRef
       invariant(editorActor, 'No editor actor found in diagram actor system')
-      editorActor.send({ type: 'edit.finish', wasChanged })
+      editorActor.send({ type: wasChanged ? 'edit.move.end' : 'edit.move.cancel' })
     },
     undoEditing: () => {
       const editorActor = typedSystem(actorRef.current.system).editorActorRef
       invariant(editorActor, 'No editor actor found in diagram actor system')
-      const hasUndo = editorActor.getSnapshot().context.history.length > 0
+      const hasUndo = editorActor.getSnapshot().context.history !== null
       if (hasUndo) {
         editorActor.send({ type: 'undo' })
       }

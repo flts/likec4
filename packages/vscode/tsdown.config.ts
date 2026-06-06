@@ -10,33 +10,39 @@ const isDev = !isProduction
 
 const shared = {
   clean: true,
-  define: {
-    'process.env.NODE_ENV': isProduction ? '"production"' : '"development"',
+  env: {
+    NODE_ENV: isProduction ? 'production' : 'development',
   },
   minify: isProduction,
   outputOptions: {
     keepNames: true,
   },
-  inlineOnly: false as const,
-  external: ['vscode'],
+  dts: false,
+  deps: {
+    neverBundle: ['vscode'],
+    alwaysBundle: [
+      /@likec4/,
+    ],
+  },
 }
 
 export default defineConfig([
   {
+    ...shared,
     outDir: 'dist/node',
     entry: 'src/node/extension.ts',
     format: 'cjs',
     nodeProtocol: true,
-    cjsDefault: true,
+    sourcemap: isDev,
     inputOptions: {
       resolve: {
-        conditionNames: [isDev ? 'development' : 'production', 'sources', 'node', 'import', 'default'],
+        conditionNames: ['sources', 'node', 'import', 'default'],
       },
     },
-    ...shared,
     hooks: {
       async 'build:done'() {
         await copySchema()
+        await copySkills()
         await copyPreview()
       },
     },
@@ -49,9 +55,10 @@ export default defineConfig([
     ],
     nodeProtocol: true,
     format: 'esm',
+    sourcemap: isDev,
     inputOptions: {
       resolve: {
-        conditionNames: [isDev ? 'development' : 'production', 'sources', 'node', 'import', 'default'],
+        conditionNames: ['sources', 'node', 'import', 'default'],
       },
     },
     ...shared,
@@ -60,9 +67,6 @@ export default defineConfig([
     outDir: 'dist/browser',
     entry: 'src/browser/extension.ts',
     format: 'cjs',
-    noExternal: [
-      /@likec4/,
-    ],
     inputOptions: {
       platform: 'browser',
       resolve: {
@@ -78,9 +82,6 @@ export default defineConfig([
     outDir: 'dist/browser',
     entry: 'src/browser/language-server-worker.ts',
     format: 'iife',
-    noExternal: [
-      /@likec4/,
-    ],
     inputOptions: {
       resolve: {
         conditionNames: ['worker', 'browser', 'import'],
@@ -95,6 +96,9 @@ export default defineConfig([
 
 async function copySchema() {
   const schema = fileURLToPath(import.meta.resolve('@likec4/config/schema.json', import.meta.url))
+  if (!existsSync(schema)) {
+    throw new Error(`config schema not found: ${schema}`)
+  }
   console.info('Copy config schema: %s', schema)
   await cp(schema, './data/config.schema.json')
 }
@@ -107,6 +111,15 @@ function emptyDir(dir: string) {
   for (const file of readdirSync(dir)) {
     rmSync(resolve(dir, file), { recursive: true, force: true })
   }
+}
+
+async function copySkills() {
+  const skillDir = resolve('../../skills/likec4-dsl')
+  if (!existsSync(skillDir)) {
+    throw new Error(`skills dir not found: ${skillDir}`)
+  }
+  console.info('Copy SKILLs: %s', skillDir)
+  await cp(skillDir, './data/skills/likec4-dsl', { recursive: true })
 }
 
 async function copyPreview(): Promise<void> {

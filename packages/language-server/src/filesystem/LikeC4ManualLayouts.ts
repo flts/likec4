@@ -1,5 +1,5 @@
 import { type DiagramNode, type Icon, type LayoutedView, type ProjectId, type ViewId, exact } from '@likec4/core'
-import { objectHash, onNextTick } from '@likec4/core/utils'
+import { onNextTick, stringHash } from '@likec4/core/utils'
 import JSON5 from 'json5'
 import { type Disposable, SimpleCache, URI, UriUtils } from 'langium'
 import pLimit from 'p-limit'
@@ -28,7 +28,7 @@ const extension = '.likec4.snap'
  * @todo sync with vscode extension watchers
  *       (search for ".likec4.snap" references)
  */
-export const isManualLayoutFile = (path: string) => path.endsWith(extension)
+export const isManualLayoutFile = (path: string) => path !== extension && path.endsWith(extension)
 
 function fileName(view: ViewId): string {
   return `${view}${extension}`
@@ -95,7 +95,7 @@ export class DefaultLikeC4ManualLayouts implements LikeC4ManualLayouts {
       if (snapshot) {
         viewId = snapshot.id
       } else {
-        layoutsLogger.error(`File ${uri} does not exist or is not a valid manual layout file`)
+        layoutsLogger.error(`Snapshot ${uri.fsPath} does not exist or is invalid`)
         viewId = 'index' as ViewId
       }
     }
@@ -123,15 +123,21 @@ export class DefaultLikeC4ManualLayouts implements LikeC4ManualLayouts {
     const fs = this.services.workspace.FileSystemProvider
     const outDir = getManualLayoutsOutDir(project)
     const manualLayouts = [] as LayoutedView[]
+    let hash = `${outDir.toString()}`
     try {
       const files = await fs.scanDirectory(outDir, isManualLayoutFile)
       if (files.length === 0) {
         return null
       }
+
+      // Guarantee consistent order (for hash calculation)
+      files.sort((a, b) => a.uri.path.localeCompare(b.uri.path))
+
       for (const file of files) {
         try {
           const content = await fs.readFile(file.uri)
           const parsed = JSON5.parse<LayoutedView>(content)
+          hash = stringHash(hash + file.uri.toString() + content)
           const resolved = this.resolveIconPathsAfterRead(parsed, project.folderUri)
           manualLayouts.push({
             ...resolved,
@@ -152,7 +158,7 @@ export class DefaultLikeC4ManualLayouts implements LikeC4ManualLayouts {
     }
     const views = indexBy(manualLayouts, prop('id'))
     return {
-      hash: objectHash(views),
+      hash,
       views,
     }
   }
@@ -181,6 +187,7 @@ export class DefaultLikeC4ManualLayouts implements LikeC4ManualLayouts {
     return await this.#limit(async () => {
       const cached = this.cache.get(project.id)
       if (cached !== undefined) {
+        layoutsLogger.trace`cache hit project ${project.id}`
         return cached
       }
       const result = await this.readManualLayouts(project)

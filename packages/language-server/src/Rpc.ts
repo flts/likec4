@@ -166,6 +166,7 @@ export class Rpc extends ADisposable {
         viewId,
         projectId,
         layoutType,
+        hints,
       }, cancelToken) => {
         logger
           .debug`received request ${'layoutView'} for ${viewId} from project ${projectId} (layout type: ${
@@ -175,6 +176,7 @@ export class Rpc extends ADisposable {
           viewId,
           projectId: projectId as ProjectId,
           layoutType,
+          layoutHints: hints,
           cancelToken,
         })
         return { result }

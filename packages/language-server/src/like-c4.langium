@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: MIT
+//
+// Copyright (c) 2023-2026 Denis Davydkov
+// Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//
+// Portions of this file have been modified by NVIDIA CORPORATION & AFFILIATES.
+
 grammar LikeC4
 
 entry LikeC4Grammar:
@@ -76,7 +83,8 @@ SpecificationRelationshipKind:
   'relationship' kind=RelationshipKind ('{'
     props+=(
       RelationshipStyleProperty |
-      SpecificationRelationshipStringProperty
+      SpecificationRelationshipStringProperty |
+      MultipleProperty
     )*
   '}')?
 ;
@@ -261,7 +269,7 @@ MetadataBody: '{'
 ;
 
 MetadataAttribute:
-  key=IdTerminal ':'? (value=MetadataValue | boolValue=BOOLEAN) ';'?
+  key=Id ':'? (value=MetadataValue | boolValue=BOOLEAN) ';'?
 ;
 
 MetadataValue:
@@ -406,7 +414,9 @@ DynamicViewRule:
 
 DynamicViewParallelSteps:
   ('parallel'|'par') '{'
-    (steps+=DynamicViewStep)*
+    // Accept nested ParallelSteps so we can report a clear validation error
+    // instead of leaving the user with a cryptic parser error. See #988.
+    (steps+=(DynamicViewParallelSteps | DynamicViewStep))*
   '}'
 ;
 
@@ -512,7 +522,8 @@ CustomRelationProperties: '{'
     RelationStringProperty |
     NotationProperty |
     NotesProperty |
-    RelationshipStyleProperty
+    RelationshipStyleProperty |
+    MultipleProperty
   )*
 '}'
 ;
@@ -759,7 +770,12 @@ DeploymentViewBody: '{'
 DeploymentViewRule:
   DeploymentViewRulePredicate |
   DeploymentViewRuleStyle |
-  ViewRuleAutoLayout
+  ViewRuleAutoLayout |
+  ViewRuleAncestors
+;
+
+ViewRuleAncestors:
+  key='includeAncestors' ':'? value=BOOLEAN ';'?
 ;
 
 DeploymentViewRuleStyle:

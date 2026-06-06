@@ -50,7 +50,7 @@ export const edgeLabel = defineRecipe({
       fontVariantNumeric: 'tabular-nums',
       [':where([data-likec4-color="gray"]) &']: {
         _dark: {
-          background: `[color-mix(in oklab, var(--xy-edge-label-background-color), {likec4.mixColor} 15%)]`,
+          background: `color-mix(in oklab, var(--xy-edge-label-background-color), {colors.likec4.mixColor} 15%)`,
         },
       },
     },

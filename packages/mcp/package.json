@@ -2,13 +2,16 @@
   "name": "@likec4/mcp",
   "description": "Model Context Protocol server for LikeC4",
   "license": "MIT",
-  "version": "1.55.1",
+  "version": "1.57.0",
   "bugs": "https://github.com/likec4/likec4/issues",
   "homepage": "https://likec4.dev",
   "author": "Denis Davydkov <denis@davydkov.com>",
   "type": "module",
   "bin": {
-    "likec4-mcp-server": "dist/cli.mjs"
+    "likec4-mcp": "bin/likec4-mcp.mjs"
+  },
+  "engines": {
+    "node": ">=22.22.3"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -16,6 +19,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "**/package.json",
     "!**/__*/**",
     "!**/*.spec.*",
@@ -42,9 +46,9 @@
   ],
   "scripts": {
     "typecheck": "tsc -b --verbose",
-    "build": "obuild",
-    "preinspector": "obuild",
-    "inspector": "DANGEROUSLY_OMIT_AUTH=1 LIKEC4_WORKSPACE=../../examples pnpx @modelcontextprotocol/inspector node dist/cli.mjs",
+    "build": "tsdown",
+    "preinspector": "tsdown",
+    "inspector": "DANGEROUSLY_OMIT_AUTH=1 LIKEC4_WORKSPACE=../../examples pnpx @modelcontextprotocol/inspector node bin/likec4-mcp.mjs",
     "pack": "pnpm pack",
     "postpack": "likec4ops postpack",
     "clean": "likec4ops clean",
@@ -69,19 +73,21 @@
     "@likec4/layouts": "workspace:*",
     "@likec4/log": "workspace:*",
     "@likec4/tsconfig": "workspace:*",
-    "@vitest/ui": "catalog:vitest",
-    "hono": "catalog:hono",
-    "langium": "catalog:langium",
     "@modelcontextprotocol/sdk": "catalog:mcp",
     "@types/node": "catalog:",
-    "tinyrainbow": "catalog:utils",
-    "defu": "catalog:utils",
+    "@vitest/ui": "catalog:vitest",
     "citty": "catalog:utils",
-    "obuild": "catalog:obuild",
+    "defu": "catalog:utils",
+    "hono": "catalog:hono",
+    "langium": "catalog:langium",
     "remeda": "catalog:utils",
+    "tinyrainbow": "catalog:utils",
+    "tsdown": "catalog:tsdown",
     "tsx": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
+    "type-fest": "catalog:externals",
+    "unctx": "catalog:utils",
     "vitest": "catalog:vitest",
     "vscode-uri": "catalog:vscode",
     "zod": "catalog:externals"

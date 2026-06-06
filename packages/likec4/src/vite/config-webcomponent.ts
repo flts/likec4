@@ -1,93 +1,68 @@
-// SPDX-License-Identifier: MIT
-//
-// Copyright (c) 2023-2026 Denis Davydkov
-// Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-//
-// Portions of this file have been modified by NVIDIA CORPORATION & AFFILIATES.
-
-import { viteAliases } from '#vite/aliases'
-import { logger as consola } from '@likec4/log'
 import { LikeC4VitePlugin } from '@likec4/vite-plugin'
-import react from '@vitejs/plugin-react'
-import fs from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import k from 'tinyrainbow'
 import type { InlineConfig } from 'vite'
-import type { LikeC4ViteWebcomponentConfig } from './config-webcomponent.prod'
-import { chunkSizeWarningLimit, viteLogger } from './utils'
+import type { LikeC4 } from '../LikeC4'
+import { createLikeC4Logger } from '../logger'
+import { viteAliases } from './aliases'
+import { viteAppRoot } from './utils'
 
-const _dirname = dirname(fileURLToPath(import.meta.url))
-const pkgRoot = resolve(_dirname, '../..')
+export type LikeC4ViteWebcomponentConfig = {
+  webcomponentPrefix: string | undefined
+  languageServices: LikeC4
+  outDir: string
+  base: string
+  filename?: string
+}
 
-export async function viteWebcomponentConfig({
+export function viteWebcomponentConfig({
   languageServices,
   outDir,
   base,
   webcomponentPrefix = 'likec4',
   filename = 'likec4-views.js',
-}: LikeC4ViteWebcomponentConfig): Promise<InlineConfig> {
-  const customLogger = viteLogger
-
-  const root = resolve(pkgRoot, 'app')
-  if (!fs.existsSync(root)) {
-    consola.error(`app root does not exist: ${root}`)
-    throw new Error(`app root does not exist: ${root}`)
-  }
-
+}: LikeC4ViteWebcomponentConfig): InlineConfig {
+  const customLogger = createLikeC4Logger(['vite', 'webcomponent'])
+  const root = viteAppRoot()
   customLogger.info(k.cyan('outDir') + ' ' + k.dim(outDir))
 
   return {
-    customLogger,
     root,
-    configFile: false,
-    resolve: {
-      conditions: ['sources'],
-      alias: viteAliases(),
-    },
     clearScreen: false,
     base,
+    configFile: false,
     publicDir: false,
+    mode: 'production',
+    resolve: {
+      alias: viteAliases(),
+    },
     define: {
-      WEBCOMPONENT_PREFIX: JSON.stringify(webcomponentPrefix),
-      __USE_HASH_HISTORY__: 'false',
-      __USE_OVERVIEW_GRAPH__: 'false',
-      __DEFAULT_THEME__: JSON.stringify('auto'),
-      'process.env.NODE_ENV': '"development"',
+      'process.env.NODE_ENV': '"production"',
     },
     build: {
       outDir,
       emptyOutDir: false,
-      cssCodeSplit: false,
-      cssMinify: true,
       sourcemap: false,
-      minify: 'esbuild',
-      chunkSizeWarningLimit,
+      minify: true,
+      assetsInlineLimit: 500 * 1024, // 500KB
+      chunkSizeWarningLimit: 3 * 1024, // ~3MB
       lib: {
-        entry: 'src/webcomponent.tsx',
+        entry: 'codegen/webcomponent.mjs',
         fileName(_format, _entryName) {
           return filename
         },
         formats: ['iife'],
         name: 'LikeC4Views',
       },
-      rollupOptions: {
-        treeshake: {
-          preset: 'recommended',
-        },
-        output: {
-          format: 'iife',
-          compact: true,
-          hoistTransitiveImports: false,
-          entryFileNames: filename,
-        },
-      },
     },
+    customLogger,
     plugins: [
-      react({}),
       LikeC4VitePlugin({
+        ai: 'disabled',
         languageServices: languageServices.languageServices,
+        appConfig: {
+          webcomponentPrefix,
+        },
       }),
     ],
-  }
+  } satisfies InlineConfig
 }
